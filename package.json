@@ -1,0 +1,27 @@
+{
+	"name": "dozy-tabs",
+	"description": "Puts idle YouTube tabs to sleep to free memory and CPU",
+	"private": true,
+	"version": "0.1.0",
+	"type": "module",
+	"scripts": {
+		"dev": "wxt",
+		"dev:firefox": "wxt -b firefox --mv3",
+		"build": "wxt build",
+		"build:firefox": "wxt build -b firefox --mv3",
+		"zip": "wxt zip",
+		"zip:firefox": "wxt zip -b firefox --mv3",
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run",
+		"format": "prettier --write .",
+		"format:check": "prettier --check .",
+		"postinstall": "wxt prepare"
+	},
+	"devDependencies": {
+		"@playwright/test": "^1.64.0",
+		"prettier": "^3.9.9",
+		"typescript": "^7.0.2",
+		"vitest": "^5.0.3",
+		"wxt": "^0.21.4"
+	}
+}

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>Dozy Tabs</title>
+	</head>
+	<body>
+		<main class="popup">
+			<header class="header">
+				<span class="moon" aria-hidden="true"></span>
+				<h1 data-i18n="extName"></h1>
+			</header>
+			<section class="counts">
+				<p id="total" class="total"></p>
+				<p id="breakdown" class="breakdown"></p>
+			</section>
+			<button id="sleep-all" class="primary" type="button" data-i18n="popupSleepAll"></button>
+			<div class="toggles">
+				<label id="keep-awake-row" class="toggle" hidden>
+					<input id="keep-awake" type="checkbox" />
+					<span data-i18n="popupKeepAwake"></span>
+				</label>
+				<label class="toggle">
+					<input id="enabled" type="checkbox" />
+					<span data-i18n="popupEnabled"></span>
+				</label>
+			</div>
+			<button id="open-options" class="link" type="button" data-i18n="popupOpenOptions"></button>
+		</main>
+		<script type="module" src="./main.ts"></script>
+	</body>
+</html>

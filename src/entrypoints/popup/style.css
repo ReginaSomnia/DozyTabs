@@ -1,0 +1,67 @@
+.popup {
+	width: 260px;
+	padding: 14px 16px 12px;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.header h1 {
+	margin: 0;
+	font-size: 15px;
+	font-weight: 650;
+}
+
+/* a crescent from one circle's inset shadow, same shape as the icon */
+.moon {
+	width: 16px;
+	height: 16px;
+	border-radius: 50%;
+	box-shadow: inset -5px -2px 0 0 var(--moon);
+	transform: rotate(-20deg);
+}
+
+.counts p {
+	margin: 0;
+}
+
+.total {
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.breakdown {
+	color: var(--muted);
+}
+
+.primary {
+	padding: 8px 12px;
+	border: none;
+	border-radius: 8px;
+	background: var(--accent);
+	color: var(--accent-text);
+	font-weight: 600;
+}
+
+.toggles {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding-top: 10px;
+	border-top: 1px solid var(--border);
+}
+
+.link {
+	align-self: flex-start;
+	padding: 0;
+	border: none;
+	background: none;
+	color: var(--muted);
+	text-decoration: underline;
+}
