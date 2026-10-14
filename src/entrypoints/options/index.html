@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="manifest.open_in_tab" content="true" />
+		<title>Dozy Tabs</title>
+	</head>
+	<body>
+		<main class="options">
+			<h1 data-i18n="optionsTitle"></h1>
+			<form id="form">
+				<label class="toggle">
+					<input name="enabled" type="checkbox" />
+					<span data-i18n="optionsEnabled"></span>
+				</label>
+				<label class="number">
+					<span data-i18n="optionsIdleMinutes"></span>
+					<input name="idleMinutes" type="number" min="1" max="1440" step="1" required />
+				</label>
+				<label class="toggle">
+					<input name="sleepUnvisited" type="checkbox" />
+					<span data-i18n="optionsSleepUnvisited"></span>
+				</label>
+				<label class="toggle">
+					<input name="rememberPosition" type="checkbox" />
+					<span data-i18n="optionsRememberPosition"></span>
+				</label>
+				<fieldset>
+					<legend data-i18n="optionsKeepAwakeHeading"></legend>
+					<label class="toggle">
+						<input name="keepPinned" type="checkbox" />
+						<span data-i18n="optionsKeepPinned"></span>
+					</label>
+					<label class="toggle">
+						<input name="keepMusic" type="checkbox" />
+						<span data-i18n="optionsKeepMusic"></span>
+					</label>
+					<label class="toggle">
+						<input name="keepDrafts" type="checkbox" />
+						<span data-i18n="optionsKeepDrafts"></span>
+					</label>
+					<label class="toggle">
+						<input name="keepWhileOffline" type="checkbox" />
+						<span data-i18n="optionsKeepWhileOffline"></span>
+					</label>
+				</fieldset>
+			</form>
+			<p id="status" class="status" role="status"></p>
+		</main>
+		<script type="module" src="./main.ts"></script>
+	</body>
+</html>

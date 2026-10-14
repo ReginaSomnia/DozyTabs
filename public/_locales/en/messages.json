@@ -1,0 +1,87 @@
+{
+	"extName": {
+		"message": "Dozy Tabs"
+	},
+	"extDescription": {
+		"message": "Puts idle YouTube tabs to sleep so they stop using memory and CPU, and picks up where you left off"
+	},
+	"popupNoTabs": {
+		"message": "No YouTube tabs open"
+	},
+	"popupTotalOne": {
+		"message": "1 YouTube tab"
+	},
+	"popupTotalMany": {
+		"message": "$COUNT$ YouTube tabs",
+		"placeholders": {
+			"count": {
+				"content": "$1"
+			}
+		}
+	},
+	"popupBreakdown": {
+		"message": "$ASLEEP$ asleep, $IDLE$ idle, $PLAYING$ playing",
+		"placeholders": {
+			"asleep": {
+				"content": "$1"
+			},
+			"idle": {
+				"content": "$2"
+			},
+			"playing": {
+				"content": "$3"
+			}
+		}
+	},
+	"popupSleepAll": {
+		"message": "Sleep all idle now"
+	},
+	"popupKeepAwake": {
+		"message": "Keep this tab awake"
+	},
+	"popupEnabled": {
+		"message": "Dozy Tabs is on"
+	},
+	"popupOpenOptions": {
+		"message": "Settings"
+	},
+	"menuKeepAwake": {
+		"message": "Keep this tab awake"
+	},
+	"menuSleepAll": {
+		"message": "Sleep all idle YouTube tabs"
+	},
+	"optionsTitle": {
+		"message": "Dozy Tabs settings"
+	},
+	"optionsEnabled": {
+		"message": "Put idle YouTube tabs to sleep"
+	},
+	"optionsIdleMinutes": {
+		"message": "Minutes before an idle tab sleeps"
+	},
+	"optionsSleepUnvisited": {
+		"message": "Sleep tabs opened in the background as soon as they load"
+	},
+	"optionsRememberPosition": {
+		"message": "Remember the position in the video"
+	},
+	"optionsKeepAwakeHeading": {
+		"message": "Keep these awake"
+	},
+	"optionsKeepPinned": {
+		"message": "Pinned tabs"
+	},
+	"optionsKeepMusic": {
+		"message": "YouTube Music"
+	},
+	"optionsKeepDrafts": {
+		"message": "Tabs with an unsent comment"
+	},
+	"optionsKeepWhileOffline": {
+		"message": "Every tab, while you're offline"
+	},
+	"optionsSaved": {
+		"message": "Saved"
+	}
+}
