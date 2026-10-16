@@ -22,7 +22,7 @@ Dozy Tabs uses the browser's own tab discarding, sleeping tabs keeps their title
 - Settings sync between computers through your browser account (if you have it configured, that is)
 - After a browser restart, YouTube tabs that aren't active go to sleep immediately
 
-So far it's been tested on Chromium. Firefox builds correctly, but it didn't have a proper test yet, and the restart behaviour still needs more checking on everywhere. Also, it should work in all Chromium-based (Chrome, Edge, Vivaldi, Brave, etc) and Firefox-based (Zen, Librewolf, etc) browsers, but again, it should be tested
+So far it's been tested on Chromium and Firefox, both with end-to-end tests on YouTube (see [Development](#development)), but the restart behaviour still needs more checking on everywhere. Also, it should work in all Chromium-based (Chrome, Edge, Vivaldi, Brave, etc) and Firefox-based (Zen, Librewolf, etc) browsers, but again, it should be tested
 
 It only asks for access to youtube.com for now, so there's no "read your browsing history" warning at install. Still, the whole thing is designed having in mind that we could use it for more domains, but for now I keep it for the worst offender, which is YouTube
 
@@ -48,6 +48,26 @@ The settings are in the popup's settings link, or in the extension's options fro
 pnpm dev            # Chrome with live reload
 pnpm dev:firefox    # same on Firefox
 pnpm test           # unit tests
+pnpm test:e2e       # end-to-end tests on Chromium
+pnpm test:e2e:firefox  # same on Firefox
 pnpm typecheck
 pnpm format
 ```
+
+### End-to-end tests
+
+They open YouTube in a real browser via Playwright, building the browser's extension first. The browsers go into `e2e/browsers` (gitignored), so before the first run do the following:
+
+```sh
+pnpm e2e:install
+```
+
+That downloads Playwright's Chromium and the latest Firefox release from Mozilla. The Firefox part only works on Windows for now (but I'll do the same system agnostic soon-ish, I was just on my Windows while making this, but it should be easily adaptable to any Linux distro), it grabs the installer from [archive.mozilla.org](https://archive.mozilla.org/pub/firefox/releases/), checks it against Mozilla's `SHA256SUMS` and unpacks it without installing anything. To do it by hand, download `Firefox Setup <version>.exe` from there and run
+
+```sh
+"Firefox Setup <version>.exe" /ExtractDir=<repo>\e2e\browsers\firefox
+```
+
+So `firefox.exe` ends up in `e2e\browsers\firefox\core` with that. Playwright's own Firefox can't be used here, it always reports pages as visible, even in background tabs, and unfortunately that's what the extension checks
+
+Profiles and temp files stay inside `e2e/` (if you follow this steps), but the browsers still write a few things of their own outside it, just FYI. It's inside the project folders mostly for an easier cleanup, but on Windows it writes some registry keys

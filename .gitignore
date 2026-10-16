@@ -9,3 +9,7 @@ web-ext.config.ts
 
 docs/
 probe/
+e2e/browsers/
+e2e/profiles/
+e2e/results/
+e2e/tmp/
