@@ -37,7 +37,10 @@ function setup(initialTabs: LiveTab[]) {
 	const marked: number[] = [];
 	const injected: number[] = [];
 	const later: Array<() => Promise<void>> = [];
+	// favicon waits and discards in the order they happened
+	const events: string[] = [];
 	let reply = (_tabId: number): PrepareSleepResult | null => ({ ok: true });
+	let markReply = true;
 	let newIdFor = (tabId: number) => tabId;
 
 	const ports: Ports = {
@@ -54,6 +57,7 @@ function setup(initialTabs: LiveTab[]) {
 			if (!tab || tab.active || tab.discarded) return null;
 			tab.discarded = true;
 			discarded.push(tabId);
+			events.push(`discard ${tabId}`);
 			return newIdFor(tabId);
 		},
 		prepareSleep: async (tabId) => {
@@ -62,6 +66,10 @@ function setup(initialTabs: LiveTab[]) {
 		},
 		markAsleep: async (tabId) => {
 			marked.push(tabId);
+			return markReply;
+		},
+		waitForSleepFavicon: async (tabId) => {
+			events.push(`favicon ${tabId}`);
 		},
 		setAlarm: async (tabId, delayMinutes) => {
 			alarms.set(tabId, delayMinutes);
@@ -94,8 +102,12 @@ function setup(initialTabs: LiveTab[]) {
 		marked,
 		injected,
 		later,
+		events,
 		setReply(fn: typeof reply) {
 			reply = fn;
+		},
+		setMarkReply(value: boolean) {
+			markReply = value;
 		},
 		setNewIdFor(fn: typeof newIdFor) {
 			newIdFor = fn;
@@ -290,6 +302,33 @@ describe("browser startup", () => {
 		const t = setup([youtubeTab(2)]);
 		await t.engine.onStartup();
 		expect(t.discarded).toEqual([]);
+	});
+});
+
+describe("the sleeping favicon", () => {
+	it("is in the tab strip before a page that got ready is discarded", async () => {
+		const t = setup([youtubeTab(1)]);
+		await t.engine.onAlarm(1);
+		expect(t.events).toEqual(["favicon 1", "discard 1"]);
+	});
+
+	it("is in the tab strip before a marked page is discarded", async () => {
+		const t = setup([youtubeTab(2), youtubeTab(7, { windowId: 2 })]);
+		await t.engine.onStartup();
+		// startup sleeps its tabs in parallel, so only each tab's own order counts
+		for (const id of [2, 7]) {
+			expect(t.events.indexOf(`favicon ${id}`)).toBeGreaterThan(-1);
+			expect(t.events.indexOf(`favicon ${id}`)).toBeLessThan(t.events.indexOf(`discard ${id}`));
+		}
+	});
+
+	it("isn't waited for when no page swapped it", async () => {
+		const t = setup([youtubeTab(1), youtubeTab(2)]);
+		t.setReply(() => null);
+		await t.engine.onAlarm(1);
+		t.setMarkReply(false);
+		await t.engine.onStartup();
+		expect(t.events).toEqual(["discard 1", "discard 2"]);
 	});
 });
 

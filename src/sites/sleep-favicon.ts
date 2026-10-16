@@ -10,6 +10,11 @@ const SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
 
 export const SLEEP_FAVICON = `data:image/svg+xml,${encodeURIComponent(SVG)}`;
 
+/** YouTube's own favicons are never SVG, and Firefox re-encodes ours as base64 */
+export function isSleepFavicon(url: string | undefined): boolean {
+	return url?.startsWith("data:image/svg+xml") ?? false;
+}
+
 /** Swaps in the sleeping favicon, returns a function that puts the page's own back */
 export function showSleepFavicon(doc: Document): () => void {
 	const originals = [...doc.querySelectorAll<HTMLLinkElement>('link[rel~="icon"]')];

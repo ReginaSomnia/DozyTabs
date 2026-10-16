@@ -14,11 +14,15 @@ import {
 import type { LiveTab } from "@/core/policy";
 import { loadSettings, onSettingsChanged } from "@/core/settings";
 import { createTabStateStore } from "@/core/tab-state";
+import { isSleepFavicon } from "@/sites/sleep-favicon";
 import { YOUTUBE_MATCH_PATTERNS } from "@/sites/youtube";
 
 const ALARM_PREFIX = "sleep:";
 const PREPARE_TIMEOUT_MS = 1000;
 const MARK_TIMEOUT_MS = 300;
+// Firefox showed it within 150 ms in the probe, so this only runs out when
+// something went wrong, and the tab still sleeps
+const FAVICON_TIMEOUT_MS = 500;
 const MENU_KEEP_AWAKE = "keep-awake";
 const MENU_SLEEP_ALL = "sleep-all";
 
@@ -96,11 +100,34 @@ function createBrowserPorts(): Ports {
 		},
 		async markAsleep(tabId) {
 			const message: MarkAsleepMessage = { type: "mark-asleep" };
-			const reply = browser.tabs.sendMessage(tabId, message).catch(() => {
-				// no content script yet (still loading or not restored), the tab
-				// just keeps its normal favicon
+			// no content script yet (still loading or not restored) means the
+			// tab just keeps its normal favicon
+			const reply = browser.tabs.sendMessage(tabId, message).then(
+				(answer) => answer === true,
+				() => false,
+			);
+			return Promise.race([
+				reply,
+				new Promise<boolean>((resolve) => setTimeout(() => resolve(false), MARK_TIMEOUT_MS)),
+			]);
+		},
+		waitForSleepFavicon(tabId) {
+			return new Promise<void>((resolve) => {
+				const done = () => {
+					clearTimeout(timer);
+					browser.tabs.onUpdated.removeListener(onUpdated);
+					resolve();
+				};
+				const onUpdated = (id: number, change: Browser.tabs.OnUpdatedInfo) => {
+					if (id === tabId && isSleepFavicon(change.favIconUrl)) done();
+				};
+				const timer = setTimeout(done, FAVICON_TIMEOUT_MS);
+				browser.tabs.onUpdated.addListener(onUpdated);
+				// Chrome usually shows it before this even starts listening
+				browser.tabs.get(tabId).then((tab) => {
+					if (isSleepFavicon(tab.favIconUrl)) done();
+				}, done);
 			});
-			await Promise.race([reply, new Promise((resolve) => setTimeout(resolve, MARK_TIMEOUT_MS))]);
 		},
 		async setAlarm(tabId, delayMinutes) {
 			await browser.alarms.create(alarmName(tabId), {
