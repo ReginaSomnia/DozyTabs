@@ -13,6 +13,8 @@ export type Ports = {
 	discard(tabId: number): Promise<number | null>;
 	/** Null when the tab has no content script listening */
 	prepareSleep(tabId: number, message: PrepareSleepMessage): Promise<PrepareSleepResult | null>;
+	/** Best effort, lets a page that isn't asked first still show the sleeping favicon */
+	markAsleep(tabId: number): Promise<void>;
 	setAlarm(tabId: number, delayMinutes: number): Promise<void>;
 	clearAlarm(tabId: number): Promise<void>;
 	hasAlarm(tabId: number): Promise<boolean>;
@@ -77,6 +79,8 @@ export function createEngine(ports: Ports, states: TabStateStore, loadSettings: 
 				}
 				return false;
 			}
+		} else {
+			await ports.markAsleep(tab.id);
 		}
 		await ports.clearAlarm(tab.id);
 		const newId = await ports.discard(tab.id);

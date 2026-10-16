@@ -1,7 +1,16 @@
 import { browser, type Browser } from "wxt/browser";
 import { defineBackground } from "wxt/utils/define-background";
 import { createEngine, type Ports } from "@/core/engine";
-import { isContentMessage, isPopupRequest, type PopupRequest, type PrepareSleepResult } from "@/core/messages";
+import {
+	isContentMessage,
+	isPageRequest,
+	isPopupRequest,
+	type MarkAsleepMessage,
+	type PageRequest,
+	type PageState,
+	type PopupRequest,
+	type PrepareSleepResult,
+} from "@/core/messages";
 import type { LiveTab } from "@/core/policy";
 import { loadSettings, onSettingsChanged } from "@/core/settings";
 import { createTabStateStore } from "@/core/tab-state";
@@ -9,6 +18,7 @@ import { YOUTUBE_MATCH_PATTERNS } from "@/sites/youtube";
 
 const ALARM_PREFIX = "sleep:";
 const PREPARE_TIMEOUT_MS = 1000;
+const MARK_TIMEOUT_MS = 300;
 const MENU_KEEP_AWAKE = "keep-awake";
 const MENU_SLEEP_ALL = "sleep-all";
 
@@ -83,6 +93,14 @@ function createBrowserPorts(): Ports {
 			} finally {
 				clearTimeout(timer);
 			}
+		},
+		async markAsleep(tabId) {
+			const message: MarkAsleepMessage = { type: "mark-asleep" };
+			const reply = browser.tabs.sendMessage(tabId, message).catch(() => {
+				// no content script yet (still loading or not restored), the tab
+				// just keeps its normal favicon
+			});
+			await Promise.race([reply, new Promise((resolve) => setTimeout(resolve, MARK_TIMEOUT_MS))]);
 		},
 		async setAlarm(tabId, delayMinutes) {
 			await browser.alarms.create(alarmName(tabId), {
@@ -166,6 +184,34 @@ export default defineBackground(() => {
 		}
 	}
 
+	async function handlePage(tabId: number, request: PageRequest): Promise<unknown> {
+		switch (request.type) {
+			case "page-state": {
+				const state: PageState = {
+					enabled: (await loadSettings()).enabled,
+					keepAwake: await engine.isKeptAwake(tabId),
+				};
+				return state;
+			}
+			case "page-set-keep-awake":
+				await engine.setKeepAwake(tabId, request.keepAwake);
+				await syncKeepAwakeMenu(tabId);
+				return null;
+			case "page-sleep-all":
+				return engine.sleepAll();
+			case "page-open-options":
+				await browser.runtime.openOptionsPage();
+				return null;
+		}
+	}
+
+	const reply = (task: Promise<unknown>, sendResponse: (response: unknown) => void) => {
+		task.then(sendResponse, (error: unknown) => {
+			logError(error);
+			sendResponse(null);
+		});
+	};
+
 	browser.runtime.onInstalled.addListener(({ reason }) => {
 		run(createMenus());
 		if (reason === "install" || reason === "update") {
@@ -220,16 +266,16 @@ export default defineBackground(() => {
 		// the origin is what tells them apart from the content script
 		if (isExtensionPage(sender.url)) {
 			if (!isPopupRequest(message)) return false;
-			handlePopup(message).then(sendResponse, (error: unknown) => {
-				logError(error);
-				sendResponse(null);
-			});
+			reply(handlePopup(message), sendResponse);
 			return true;
 		}
 		const tabId = sender.tab?.id;
-		if (tabId !== undefined && isContentMessage(message)) {
-			run(engine.onContentMessage(tabId, message));
+		if (tabId === undefined) return false;
+		if (isPageRequest(message)) {
+			reply(handlePage(tabId, message), sendResponse);
+			return true;
 		}
+		if (isContentMessage(message)) run(engine.onContentMessage(tabId, message));
 		return false;
 	});
 

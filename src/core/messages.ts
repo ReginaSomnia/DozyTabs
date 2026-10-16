@@ -13,6 +13,17 @@ export type PrepareSleepMessage = {
 
 export type PrepareSleepResult = { ok: true } | { ok: false; reason: "visible" | "playing" | "draft" | "timeout" };
 
+export type MarkAsleepMessage = { type: "mark-asleep" };
+
+/** From the button the content script adds to YouTube's top bar */
+export type PageRequest =
+	| { type: "page-state" }
+	| { type: "page-set-keep-awake"; keepAwake: boolean }
+	| { type: "page-sleep-all" }
+	| { type: "page-open-options" };
+
+export type PageState = { enabled: boolean; keepAwake: boolean };
+
 export type PopupRequest =
 	| { type: "get-summary"; tabId: number | undefined }
 	| { type: "sleep-all" }
@@ -28,6 +39,7 @@ export type Summary = {
 
 const CONTENT_TYPES = new Set(["visible", "hidden", "activity", "playback", "draft"]);
 const POPUP_TYPES = new Set(["get-summary", "sleep-all", "set-keep-awake"]);
+const PAGE_TYPES = new Set(["page-state", "page-set-keep-awake", "page-sleep-all", "page-open-options"]);
 
 function typeOf(message: unknown): string | undefined {
 	if (typeof message !== "object" || message === null) return undefined;
@@ -45,4 +57,12 @@ export function isPrepareSleepMessage(message: unknown): message is PrepareSleep
 
 export function isPopupRequest(message: unknown): message is PopupRequest {
 	return POPUP_TYPES.has(typeOf(message) ?? "");
+}
+
+export function isPageRequest(message: unknown): message is PageRequest {
+	return PAGE_TYPES.has(typeOf(message) ?? "");
+}
+
+export function isMarkAsleepMessage(message: unknown): message is MarkAsleepMessage {
+	return typeOf(message) === "mark-asleep";
 }
