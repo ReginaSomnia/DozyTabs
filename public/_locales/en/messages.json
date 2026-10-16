@@ -83,5 +83,28 @@
 	},
 	"optionsSaved": {
 		"message": "Saved"
+	},
+	"pageStatusCanSleep": {
+		"message": "This tab sleeps when it's idle"
+	},
+	"pageStatusKeptAwake": {
+		"message": "This tab stays awake until you close it"
+	},
+	"pageStatusOff": {
+		"message": "Dozy Tabs is off"
+	},
+	"pageSleptNone": {
+		"message": "No idle tabs to put to sleep"
+	},
+	"pageSleptOne": {
+		"message": "1 tab went to sleep"
+	},
+	"pageSleptMany": {
+		"message": "$COUNT$ tabs went to sleep",
+		"placeholders": {
+			"count": {
+				"content": "$1"
+			}
+		}
 	}
 }

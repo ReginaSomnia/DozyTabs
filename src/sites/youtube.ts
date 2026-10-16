@@ -1,6 +1,7 @@
 export const YOUTUBE_MATCH_PATTERNS = ["*://*.youtube.com/*"];
 
 const MIN_TIMESTAMP_SECONDS = 5;
+const END_MARGIN_SECONDS = 10;
 
 function parse(url: string | undefined): URL | null {
 	if (!url) return null;
@@ -22,12 +23,20 @@ export function isMusicUrl(url: string | undefined): boolean {
 	return parse(url)?.hostname === "music.youtube.com";
 }
 
-export function withTimestamp(url: string, seconds: number): string | null {
+// The URL to put in place before the tab sleeps, or null to leave it as is.
+// Near the start or at the end there's no spot worth keeping, so an old t from
+// an earlier sleep goes away and the video starts over like YouTube does
+export function withTimestamp(url: string, seconds: number, duration = Number.NaN): string | null {
 	const parsed = parse(url);
 	if (!parsed || !isYouTubeUrl(url)) return null;
 	const isWatchPage = parsed.pathname === "/watch" && parsed.searchParams.has("v");
-	if (!isWatchPage) return null;
-	if (!Number.isFinite(seconds) || seconds < MIN_TIMESTAMP_SECONDS) return null;
+	if (!isWatchPage || !Number.isFinite(seconds)) return null;
+	const finished = Number.isFinite(duration) && seconds >= duration - END_MARGIN_SECONDS;
+	if (seconds < MIN_TIMESTAMP_SECONDS || finished) {
+		if (!parsed.searchParams.has("t")) return null;
+		parsed.searchParams.delete("t");
+		return parsed.toString();
+	}
 	parsed.searchParams.set("t", `${Math.floor(seconds)}s`);
 	return parsed.toString();
 }

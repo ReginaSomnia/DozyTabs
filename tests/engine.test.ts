@@ -34,6 +34,7 @@ function setup(initialTabs: LiveTab[]) {
 	const alarms = new Map<number, number>();
 	const discarded: number[] = [];
 	const prepared: number[] = [];
+	const marked: number[] = [];
 	const injected: number[] = [];
 	const later: Array<() => Promise<void>> = [];
 	let reply = (_tabId: number): PrepareSleepResult | null => ({ ok: true });
@@ -58,6 +59,9 @@ function setup(initialTabs: LiveTab[]) {
 		prepareSleep: async (tabId) => {
 			prepared.push(tabId);
 			return reply(tabId);
+		},
+		markAsleep: async (tabId) => {
+			marked.push(tabId);
 		},
 		setAlarm: async (tabId, delayMinutes) => {
 			alarms.set(tabId, delayMinutes);
@@ -87,6 +91,7 @@ function setup(initialTabs: LiveTab[]) {
 		alarms,
 		discarded,
 		prepared,
+		marked,
 		injected,
 		later,
 		setReply(fn: typeof reply) {
@@ -199,6 +204,8 @@ describe("when an alarm fires", () => {
 		expect(t.prepared).toEqual([1]);
 		expect(t.discarded).toEqual([1]);
 		expect(t.alarms.has(1)).toBe(false);
+		// the page marks itself while it prepares, no second message needed
+		expect(t.marked).toEqual([]);
 	});
 
 	it("doesn't discard a tab that became active", async () => {
@@ -274,6 +281,7 @@ describe("browser startup", () => {
 		await t.engine.onStartup();
 		expect([...t.discarded].sort()).toEqual([2, 7]);
 		expect(t.prepared).toEqual([]);
+		expect([...t.marked].sort()).toEqual([2, 7]);
 		expect(t.alarms.size).toBe(0);
 	});
 
@@ -299,6 +307,7 @@ describe("tabs opened in the background", () => {
 		await t.engine.onUpdated(5, { title: "Video - YouTube" }, loaded);
 		expect(t.discarded).toEqual([5]);
 		expect(t.prepared).toEqual([]);
+		expect(t.marked).toEqual([5]);
 	});
 
 	it("sleep after the fallback delay when the title stays generic", async () => {

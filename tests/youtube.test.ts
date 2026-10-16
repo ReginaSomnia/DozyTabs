@@ -48,6 +48,25 @@ describe("withTimestamp", () => {
 	])("skips %s", (_name, url, seconds) => {
 		expect(withTimestamp(url, seconds)).toBeNull();
 	});
+
+	it.each([
+		["at the very end", 3784],
+		["in the last 10 seconds", 3775],
+	])("skips a finished video, %s", (_name, seconds) => {
+		expect(withTimestamp(WATCH, seconds, 3784)).toBeNull();
+	});
+
+	it("drops an old t when the video is finished, so it starts over", () => {
+		expect(withTimestamp(`${WATCH}&t=300s&list=xyz`, 3784, 3784)).toBe(`${WATCH}&list=xyz`);
+	});
+
+	it("drops an old t when it's back in the first 5 seconds", () => {
+		expect(withTimestamp(`${WATCH}&t=300s`, 2)).toBe(WATCH);
+	});
+
+	it("stamps normally when the duration isn't known", () => {
+		expect(withTimestamp(WATCH, 95, Number.NaN)).toBe(`${WATCH}&t=95s`);
+	});
 });
 
 describe("hasRealTitle", () => {
