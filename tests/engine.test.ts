@@ -41,6 +41,8 @@ function setup(initialTabs: LiveTab[]) {
 	const events: string[] = [];
 	let reply = (_tabId: number): PrepareSleepResult | null => ({ ok: true });
 	let markReply = true;
+	let preparing = 0;
+	let mostPreparing = 0;
 	let newIdFor = (tabId: number) => tabId;
 
 	const ports: Ports = {
@@ -62,6 +64,11 @@ function setup(initialTabs: LiveTab[]) {
 		},
 		prepareSleep: async (tabId) => {
 			prepared.push(tabId);
+			preparing++;
+			mostPreparing = Math.max(mostPreparing, preparing);
+			// a real page answers later, which is what lets sleeps overlap
+			await new Promise((resolve) => setTimeout(resolve, 0));
+			preparing--;
 			return reply(tabId);
 		},
 		markAsleep: async (tabId) => {
@@ -109,6 +116,7 @@ function setup(initialTabs: LiveTab[]) {
 		setMarkReply(value: boolean) {
 			markReply = value;
 		},
+		mostPreparedAtOnce: () => mostPreparing,
 		setNewIdFor(fn: typeof newIdFor) {
 			newIdFor = fn;
 		},
@@ -460,6 +468,14 @@ describe("sleep all", () => {
 		await t.states.update(3, { playing: true });
 		expect(await t.engine.sleepAll()).toBe(1);
 		expect(t.discarded).toEqual([2]);
+	});
+
+	it("sleeps tabs ten at a time", async () => {
+		const ids = Array.from({ length: 25 }, (_, i) => i + 1);
+		const t = setup(ids.map((id) => youtubeTab(id)));
+		expect(await t.engine.sleepAll()).toBe(25);
+		expect([...t.discarded].sort((a, b) => a - b)).toEqual(ids);
+		expect(t.mostPreparedAtOnce()).toBe(10);
 	});
 });
 

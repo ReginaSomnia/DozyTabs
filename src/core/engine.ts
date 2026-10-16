@@ -5,6 +5,7 @@ import { EMPTY_TAB_STATE, type TabStateStore } from "@/core/tab-state";
 import { hasRealTitle, isYouTubeUrl } from "@/sites/youtube";
 
 export const UNVISITED_FALLBACK_MS = 10_000;
+const SLEEP_BATCH_QTY = 10;
 
 export type Ports = {
 	getTab(tabId: number): Promise<LiveTab | null>;
@@ -213,12 +214,19 @@ export function createEngine(ports: Ports, states: TabStateStore, loadSettings: 
 		async sleepAll(): Promise<number> {
 			const settings = await loadSettings();
 			const online = ports.isOnline();
-			let slept = 0;
+			const queue: LiveTab[] = [];
 			for (const tab of await ports.queryYouTubeTabs()) {
-				const state = await states.get(tab.id);
-				if (!decide(tab, state, settings, online).sleep) continue;
-				if (await sleep(tab, settings, true)) slept++;
+				if (decide(tab, await states.get(tab.id), settings, online).sleep) queue.push(tab);
 			}
+			// each sleep waits on the page and on the favicon, so a few at once
+			// keeps hundreds of tabs from taking a minute
+			let slept = 0;
+			const worker = async () => {
+				for (let tab = queue.shift(); tab; tab = queue.shift()) {
+					if (await sleep(tab, settings, true)) slept++;
+				}
+			};
+			await Promise.all(Array.from({ length: SLEEP_BATCH_QTY }, worker));
 			return slept;
 		},
 
