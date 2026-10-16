@@ -13,8 +13,10 @@ export type Ports = {
 	discard(tabId: number): Promise<number | null>;
 	/** Null when the tab has no content script listening */
 	prepareSleep(tabId: number, message: PrepareSleepMessage): Promise<PrepareSleepResult | null>;
-	/** Best effort, lets a page that isn't asked first still show the sleeping favicon */
-	markAsleep(tabId: number): Promise<void>;
+	/** Best effort, lets a page that isn't asked first still show the sleeping favicon. True if it did */
+	markAsleep(tabId: number): Promise<boolean>;
+	/** Resolves once the browser shows the favicon the page swapped in, or after a short wait */
+	waitForSleepFavicon(tabId: number): Promise<void>;
 	setAlarm(tabId: number, delayMinutes: number): Promise<void>;
 	clearAlarm(tabId: number): Promise<void>;
 	hasAlarm(tabId: number): Promise<boolean>;
@@ -63,6 +65,7 @@ export function createEngine(ports: Ports, states: TabStateStore, loadSettings: 
 	}
 
 	async function sleep(tab: LiveTab, settings: Settings, askPage: boolean): Promise<boolean> {
+		let swapped: boolean;
 		if (askPage) {
 			const result = await ports.prepareSleep(tab.id, {
 				type: "prepare-sleep",
@@ -79,9 +82,13 @@ export function createEngine(ports: Ports, states: TabStateStore, loadSettings: 
 				}
 				return false;
 			}
+			swapped = result !== null;
 		} else {
-			await ports.markAsleep(tab.id);
+			swapped = await ports.markAsleep(tab.id);
 		}
+		// a discarded tab keeps the favicon it had at that moment, and Firefox
+		// takes a moment to show the new one
+		if (swapped) await ports.waitForSleepFavicon(tab.id);
 		await ports.clearAlarm(tab.id);
 		const newId = await ports.discard(tab.id);
 		if (newId === null) return false;
