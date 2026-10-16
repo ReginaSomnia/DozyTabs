@@ -6,7 +6,7 @@ Dozy Tabs uses the browser's own tab discarding, sleeping tabs keeps their title
 
 ## Current features
 
-- Paused or finished videos in background tabs go to sleep in 15 minutes (you can set the timer to whatever you want, up to a day)
+- Paused or finished videos in background tabs go to sleep in 30 minutes (you can set the timer to whatever you want, up to a day)
 - Videos opened in the background (middle click, open in new tab, etc) go to sleep a couple of seconds after they load
 - Coming back to a sleeping tab, should reload the video at the right time with the `t=` param in the url (except if it's a short)
     - Although for livestreams, it should come back without timestamp to go at live, livestreams are trickier

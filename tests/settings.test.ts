@@ -12,9 +12,9 @@ describe("normalizeSettings", () => {
 	});
 
 	it("keeps valid stored values", () => {
-		expect(normalizeSettings({ idleMinutes: 30, keepMusic: false })).toEqual({
+		expect(normalizeSettings({ idleMinutes: 45, keepMusic: false })).toEqual({
 			...DEFAULT_SETTINGS,
-			idleMinutes: 30,
+			idleMinutes: 45,
 			keepMusic: false,
 		});
 	});
@@ -28,8 +28,8 @@ describe("normalizeSettings", () => {
 		[-5, 1],
 		[2.6, 3],
 		[5000, 1440],
-		[Number.NaN, 15],
-		[Number.POSITIVE_INFINITY, 15],
+		[Number.NaN, 30],
+		[Number.POSITIVE_INFINITY, 30],
 	])("turns idleMinutes %s into %s", (stored, expected) => {
 		expect(normalizeSettings({ idleMinutes: stored }).idleMinutes).toBe(expected);
 	});

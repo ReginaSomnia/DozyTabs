@@ -122,7 +122,7 @@ describe("switching tabs", () => {
 		t.patchTab(2, { active: true });
 		await t.engine.onActivated(2, 1);
 		expect(t.alarms.has(2)).toBe(false);
-		expect(t.alarms.get(1)).toBe(15);
+		expect(t.alarms.get(1)).toBe(30);
 	});
 
 	it("leaves the running alarms of other tabs alone", async () => {
@@ -148,7 +148,7 @@ describe("content script messages", () => {
 			playing: false,
 			draft: false,
 		});
-		expect(t.alarms.get(1)).toBe(15);
+		expect(t.alarms.get(1)).toBe(30);
 	});
 
 	it("hidden while playing doesn't start a timer", async () => {
@@ -169,7 +169,7 @@ describe("content script messages", () => {
 			type: "playback",
 			playing: false,
 		});
-		expect(t.alarms.get(1)).toBe(15);
+		expect(t.alarms.get(1)).toBe(30);
 	});
 
 	it("playing clears the alarm", async () => {
@@ -192,7 +192,7 @@ describe("content script messages", () => {
 		await t.engine.onContentMessage(1, { type: "draft", draft: true });
 		expect(t.alarms.has(1)).toBe(false);
 		await t.engine.onContentMessage(1, { type: "draft", draft: false });
-		expect(t.alarms.get(1)).toBe(15);
+		expect(t.alarms.get(1)).toBe(30);
 	});
 });
 
@@ -236,7 +236,7 @@ describe("when an alarm fires", () => {
 		t.setReply(() => ({ ok: false, reason: "timeout" }));
 		await t.engine.onAlarm(1);
 		expect(t.discarded).toEqual([]);
-		expect(t.alarms.get(1)).toBe(15);
+		expect(t.alarms.get(1)).toBe(30);
 	});
 
 	it("still discards when there's no content script", async () => {
@@ -333,7 +333,7 @@ describe("tabs opened in the background", () => {
 			playing: false,
 			draft: false,
 		});
-		expect(t.alarms.get(5)).toBe(15);
+		expect(t.alarms.get(5)).toBe(30);
 	});
 
 	it("aren't treated as unvisited once I switch to them", async () => {
@@ -361,7 +361,7 @@ describe("tab updates", () => {
 		expect(t.alarms.has(1)).toBe(false);
 		const quiet = t.patchTab(1, { audible: false });
 		await t.engine.onUpdated(1, { audible: false }, quiet);
-		expect(t.alarms.get(1)).toBe(15);
+		expect(t.alarms.get(1)).toBe(30);
 	});
 
 	it("moving to YouTube Music clears the alarm", async () => {
@@ -390,7 +390,7 @@ describe("keep awake", () => {
 		expect(t.alarms.has(1)).toBe(false);
 		expect(await t.engine.isKeptAwake(1)).toBe(true);
 		await t.engine.setKeepAwake(1, false);
-		expect(t.alarms.get(1)).toBe(15);
+		expect(t.alarms.get(1)).toBe(30);
 	});
 });
 
@@ -399,10 +399,10 @@ describe("settings changes", () => {
 		const t = setup([youtubeTab(1), youtubeTab(2)]);
 		t.alarms.set(1, SEEDED);
 		t.alarms.set(2, SEEDED);
-		settings.idleMinutes = 30;
+		settings.idleMinutes = 45;
 		await t.engine.onSettingsChanged();
-		expect(t.alarms.get(1)).toBe(30);
-		expect(t.alarms.get(2)).toBe(30);
+		expect(t.alarms.get(1)).toBe(45);
+		expect(t.alarms.get(2)).toBe(45);
 	});
 
 	it("clear every alarm when the extension is turned off", async () => {
@@ -429,7 +429,7 @@ describe("install", () => {
 		const t = setup([youtubeTab(1), youtubeTab(2, { discarded: true }), youtubeTab(3, { active: true })]);
 		await t.engine.onInstalled();
 		expect(t.injected).toEqual([1, 3]);
-		expect(t.alarms.get(1)).toBe(15);
+		expect(t.alarms.get(1)).toBe(30);
 		expect(t.alarms.has(2)).toBe(false);
 		expect(t.alarms.has(3)).toBe(false);
 	});
