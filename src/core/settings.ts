@@ -13,7 +13,7 @@ export type Settings = {
 
 export const DEFAULT_SETTINGS: Readonly<Settings> = Object.freeze({
 	enabled: true,
-	idleMinutes: 15,
+	idleMinutes: 30,
 	sleepUnvisited: true,
 	rememberPosition: true,
 	keepPinned: true,
