@@ -14,51 +14,113 @@ type TargetForm = { actor: string; url?: string; consoleActor: string };
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// This harness only exchanges JSON control messages, including console results.
+const MAX_PACKET_BYTES = 16 * 1024 * 1024;
+const MAX_LENGTH_DIGITS = String(MAX_PACKET_BYTES).length;
+
 export class Rdp {
-	private buffer = Buffer.alloc(0);
+	private header = "";
+	private frame?: Buffer;
+	private received = 0;
 	private pending = new Map<string, ((packet: Packet) => void)[]>();
 	private listeners = new Set<(packet: Packet) => void>();
+	private failures = new Set<(error: Error) => void>();
+	private failure?: Error;
 	private nextCall = 0;
 	// the last packets, shown when something times out
 	private recent: string[] = [];
 
 	private constructor(private socket: net.Socket) {
-		socket.on("data", (chunk: Buffer) => this.read(chunk));
+		socket.on("data", (chunk: Buffer) => {
+			try {
+				this.read(chunk);
+			} catch (error) {
+				this.fail(error instanceof Error ? error : new Error(String(error)));
+			}
+		});
+		socket.on("error", (error) => this.fail(error));
+		socket.on("end", () => this.fail(new Error("Firefox RDP connection ended")));
+		socket.on("close", () => this.fail(new Error("Firefox RDP connection closed")));
 	}
 
 	static async connect(port: number): Promise<Rdp> {
 		// the debugger server comes up a moment after the browser window
 		for (let attempt = 0; ; attempt++) {
+			let rdp: Rdp | undefined;
 			try {
 				const socket = await new Promise<net.Socket>((resolve, reject) => {
-					const s = net.connect(port, "127.0.0.1", () => resolve(s));
-					s.once("error", reject);
+					const s = net.connect(port, "127.0.0.1", () => {
+						s.off("error", failed);
+						resolve(s);
+					});
+					const failed = (error: Error) => {
+						s.destroy();
+						reject(error);
+					};
+					s.once("error", failed);
 				});
-				const rdp = new Rdp(socket);
+				rdp = new Rdp(socket);
 				await rdp.waitFor((p) => p.from === "root" && "applicationType" in p, 10_000, "greeting");
+				if (rdp.failure) throw rdp.failure;
 				return rdp;
 			} catch (error) {
-				if (attempt >= 100) throw error;
+				rdp?.close();
+				if (rdp || attempt >= 100) throw error;
 				await wait(200);
 			}
 		}
 	}
 
 	private read(chunk: Buffer): void {
-		this.buffer = Buffer.concat([this.buffer, chunk]);
-		for (;;) {
-			const colon = this.buffer.indexOf(":");
-			if (colon === -1) return;
-			const length = Number(this.buffer.subarray(0, colon).toString());
-			if (this.buffer.length < colon + 1 + length) return;
-			const text = this.buffer.subarray(colon + 1, colon + 1 + length).toString();
+		let offset = 0;
+		while (offset < chunk.length && !this.failure) {
+			if (!this.frame) {
+				const byte = chunk.readUInt8(offset++);
+				if (byte !== 58) {
+					if (byte < 48 || byte > 57 || this.header.length >= MAX_LENGTH_DIGITS) {
+						throw new Error("Invalid Firefox RDP length prefix");
+					}
+					this.header += String.fromCharCode(byte);
+					continue;
+				}
+				const length = Number(this.header);
+				if (length === 0 || length > MAX_PACKET_BYTES) {
+					throw new Error(`Firefox RDP packet length must be between 1 and ${MAX_PACKET_BYTES} bytes`);
+				}
+				this.header = "";
+				// Allocate once, then copy each body byte once, regardless of chunk size.
+				this.frame = Buffer.allocUnsafe(length);
+			}
+			const count = Math.min(this.frame.length - this.received, chunk.length - offset);
+			chunk.copy(this.frame, this.received, offset, offset + count);
+			offset += count;
+			this.received += count;
+			if (this.received < this.frame.length) return;
+			const text = this.frame.toString();
+			this.frame = undefined;
+			this.received = 0;
 			this.recent = [...this.recent.slice(-14), text.slice(0, 200)];
-			const packet = JSON.parse(text) as Packet;
-			this.buffer = this.buffer.subarray(colon + 1 + length);
+			const packet: Packet = JSON.parse(text);
+			if (!packet || typeof packet !== "object" || Array.isArray(packet) || typeof packet.from !== "string") {
+				throw new Error("Invalid Firefox RDP packet");
+			}
 			for (const listener of [...this.listeners]) listener(packet);
 			if (packet.type !== undefined && packet.error === undefined) continue;
 			this.pending.get(packet.from)?.shift()?.(packet);
 		}
+	}
+
+	private fail(error: Error): void {
+		if (this.failure) return;
+		this.failure = error;
+		this.header = "";
+		this.frame = undefined;
+		this.received = 0;
+		this.socket.destroy();
+		for (const failed of this.failures) failed(error);
+		this.failures.clear();
+		this.listeners.clear();
+		this.pending.clear();
 	}
 
 	private timedOut(what: string): Error {
@@ -66,37 +128,47 @@ export class Rdp {
 	}
 
 	private waitFor(match: (packet: Packet) => boolean, timeout: number, what: string): Promise<Packet> {
+		if (this.failure) return Promise.reject(this.failure);
 		return new Promise((resolve, reject) => {
-			const timer = setTimeout(() => {
+			const failed = (error: Error) => {
+				clearTimeout(timer);
 				this.listeners.delete(listener);
-				reject(this.timedOut(what));
-			}, timeout);
+				this.failures.delete(failed);
+				reject(error);
+			};
+			const timer = setTimeout(() => this.fail(this.timedOut(what)), timeout);
 			const listener = (packet: Packet) => {
 				if (!match(packet)) return;
 				clearTimeout(timer);
 				this.listeners.delete(listener);
+				this.failures.delete(failed);
 				resolve(packet);
 			};
 			this.listeners.add(listener);
+			this.failures.add(failed);
 		});
 	}
 
 	private request(to: string, type: string, body: object = {}, timeout = 30_000): Promise<Packet> {
+		if (this.failure) return Promise.reject(this.failure);
 		return new Promise((resolve, reject) => {
 			const queue = this.pending.get(to) ?? [];
+			const failed = (error: Error) => {
+				clearTimeout(timer);
+				this.failures.delete(failed);
+				reject(error);
+			};
 			const answer = (reply: Packet) => {
 				clearTimeout(timer);
+				this.failures.delete(failed);
 				if (reply.error) reject(new Error(`${to} ${type}: ${reply.error} ${reply.message ?? ""}`));
 				else resolve(reply);
 			};
-			// an actor that never answers shouldn't keep a spot in its queue, or
-			// its next reply would go to the wrong request
-			const timer = setTimeout(() => {
-				queue.splice(queue.indexOf(answer), 1);
-				reject(this.timedOut(`${to} ${type}`));
-			}, timeout);
+			// A timed-out reply could otherwise be delivered to the next request.
+			const timer = setTimeout(() => this.fail(this.timedOut(`${to} ${type}`)), timeout);
 			queue.push(answer);
 			this.pending.set(to, queue);
+			this.failures.add(failed);
 			const data = Buffer.from(JSON.stringify({ to, type, ...body }));
 			this.socket.write(`${data.length}:`);
 			this.socket.write(data);
@@ -194,7 +266,7 @@ export class Rdp {
 	}
 
 	close(): void {
-		this.socket.end();
+		this.fail(new Error("Firefox RDP connection closed"));
 	}
 }
 
