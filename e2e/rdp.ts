@@ -29,17 +29,32 @@ export class Rdp {
 	static async connect(port: number): Promise<Rdp> {
 		// the debugger server comes up a moment after the browser window
 		for (let attempt = 0; ; attempt++) {
+			let socket: net.Socket;
 			try {
-				const socket = await new Promise<net.Socket>((resolve, reject) => {
+				socket = await new Promise<net.Socket>((resolve, reject) => {
 					const s = net.connect(port, "127.0.0.1", () => resolve(s));
 					s.once("error", reject);
 				});
-				const rdp = new Rdp(socket);
-				await rdp.waitFor((p) => p.from === "root" && "applicationType" in p, 10_000, "greeting");
-				return rdp;
 			} catch (error) {
 				if (attempt >= 100) throw error;
 				await wait(200);
+				continue;
+			}
+			const rdp = new Rdp(socket);
+			console.log(
+				`Approve Firefox's debugger connection from 127.0.0.1:${socket.localPort} to 127.0.0.1:${port} within 60 seconds.`,
+			);
+			try {
+				await rdp.waitFor(
+					(p) => p.from === "root" && "applicationType" in p,
+					60_000,
+					"debugger connection approval",
+				);
+				return rdp;
+			} catch (error) {
+				// Do not retry approval failures or leave pending connections behind.
+				rdp.close();
+				throw error;
 			}
 		}
 	}

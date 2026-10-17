@@ -19,7 +19,8 @@ const DEBUGGER_PORT = 6123;
 
 const PREFS: Record<string, string | number | boolean> = {
 	"devtools.debugger.remote-enabled": true,
-	"devtools.debugger.prompt-connection": false,
+	// Loopback TCP is accessible to other OS users, so require approval.
+	"devtools.debugger.prompt-connection": true,
 	"devtools.chrome.enabled": true,
 	// Firefox keeps the background alive while a real toolbox is attached, and
 	// this connection doesn't count as one, so do the same here

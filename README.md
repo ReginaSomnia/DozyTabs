@@ -70,4 +70,6 @@ That downloads Playwright's Chromium and the latest Firefox release from Mozilla
 
 So `firefox.exe` ends up in `e2e\browsers\firefox\core` with that. Playwright's own Firefox can't be used here, it always reports pages as visible, even in background tabs, and unfortunately that's what the extension checks
 
+Firefox tests require manual debugger approval each time the browser launches. Compare the client and server endpoints in Firefox's incoming connection prompt with those printed by the test harness, and approve the matching connection within 60 seconds. Deny unexpected connections; the debugger has access to the browser's main process.
+
 Profiles and temp files stay inside `e2e/` (if you follow this steps), but the browsers still write a few things of their own outside it, just FYI. It's inside the project folders mostly for an easier cleanup, but on Windows it writes some registry keys
