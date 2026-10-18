@@ -26,6 +26,12 @@ So far it's been tested on Chromium and Firefox, both with end-to-end tests on Y
 
 It only asks for access to youtube.com for now, so there's no "read your browsing history" warning at install. Still, the whole thing is designed having in mind that we could use it for more domains, but for now I keep it for the worst offender, which is YouTube
 
+## Privacy
+
+Dozy Tabs doesn't collect, send or sell anything. There's no analytics, no tracking and no server, it never makes a network request of its own. It looks at YouTube pages only to know if a video is playing, where it's at, and if there's a comment you didn't send yet, and none of that leaves your browser. The settings are saved in the browser's own storage, and if you have sync turned on, your browser syncs them between your computers like with any other extension
+
+All the code is here, so you can check it yourself
+
 ## Install
 
 It's not on the extension stores yet, for now you have to build it from source. You'll need [Node.js](https://nodejs.org) and [pnpm](https://pnpm.io) (you could use npm, too, I just switched to pnpm when the full supply-chain boom started... but that would use whatever versions you get from the packages resolved that day, instead of what I used)
@@ -71,3 +77,7 @@ That downloads Playwright's Chromium and the latest Firefox release from Mozilla
 So `firefox.exe` ends up in `e2e\browsers\firefox\core` with that. Playwright's own Firefox can't be used here, it always reports pages as visible, even in background tabs, and unfortunately that's what the extension checks
 
 Profiles and temp files stay inside `e2e/` (if you follow this steps), but the browsers still write a few things of their own outside it, just FYI. It's inside the project folders mostly for an easier cleanup, but on Windows it writes some registry keys
+
+## License
+
+MIT, see [LICENSE](LICENSE)
