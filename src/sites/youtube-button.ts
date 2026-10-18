@@ -206,12 +206,16 @@ export function mountTopBarButton(doc: Document, actions: ButtonActions): () => 
 		void refresh();
 	});
 
-	keep.addEventListener("click", async () => {
+	// The page can access this shadow root and dispatch synthetic clicks.
+	// Only browser-generated interaction may invoke extension actions.
+	keep.addEventListener("click", async (event) => {
+		if (!event.isTrusted) return;
 		await actions.setKeepAwake(!(state?.keepAwake ?? false));
 		await refresh();
 	});
 
-	sleepAll.addEventListener("click", async () => {
+	sleepAll.addEventListener("click", async (event) => {
+		if (!event.isTrusted) return;
 		const count = await actions.sleepAll();
 		if (count === null) return;
 		if (count === 0) status.textContent = actions.text("pageSleptNone");
@@ -219,7 +223,8 @@ export function mountTopBarButton(doc: Document, actions: ButtonActions): () => 
 		else status.textContent = actions.text("pageSleptMany", [String(count)]);
 	});
 
-	settings.addEventListener("click", () => {
+	settings.addEventListener("click", (event) => {
+		if (!event.isTrusted) return;
 		close();
 		void actions.openOptions();
 	});
