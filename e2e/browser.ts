@@ -18,6 +18,13 @@ export const OUTPUT = path.resolve(here, "../.output");
 
 export const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/** What every pending and later call fails with once the browser is gone, so nothing waits out its timeout */
+export class BrowserClosed extends Error {
+	constructor(browser: string) {
+		super(`${browser} closed the connection`);
+	}
+}
+
 export async function until<T>(
 	check: () => Promise<T | undefined> | T | undefined,
 	timeout: number,
@@ -30,6 +37,7 @@ export async function until<T>(
 			last = await check();
 			if (last !== undefined && last !== null && last !== false) return last as T;
 		} catch (error) {
+			if (error instanceof BrowserClosed) throw error;
 			last = error;
 		}
 		if (Date.now() > end) throw new Error(`timed out waiting for ${what} (last: ${String(last)})`);

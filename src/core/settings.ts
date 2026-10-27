@@ -5,6 +5,7 @@ export type Settings = {
 	idleMinutes: number;
 	sleepUnvisited: boolean;
 	rememberPosition: boolean;
+	pauseOnRestart: boolean;
 	keepPinned: boolean;
 	keepMusic: boolean;
 	keepDrafts: boolean;
@@ -16,6 +17,7 @@ export const DEFAULT_SETTINGS: Readonly<Settings> = Object.freeze({
 	idleMinutes: 30,
 	sleepUnvisited: true,
 	rememberPosition: true,
+	pauseOnRestart: true,
 	keepPinned: true,
 	keepMusic: true,
 	keepDrafts: true,

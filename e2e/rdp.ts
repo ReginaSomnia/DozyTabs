@@ -8,6 +8,7 @@
 // The actor code is in browser/omni.ja (a zip) under
 // chrome/devtools/modules/devtools/server/actors/
 import net from "node:net";
+import { BrowserClosed } from "./browser";
 
 type Packet = { from: string; type?: string; error?: string; message?: string; [key: string]: unknown };
 type TargetForm = { actor: string; url?: string; consoleActor: string };
@@ -18,12 +19,22 @@ export class Rdp {
 	private buffer = Buffer.alloc(0);
 	private pending = new Map<string, ((packet: Packet) => void)[]>();
 	private listeners = new Set<(packet: Packet) => void>();
+	// every request and wait that hasn't settled yet, failed all at once when the connection goes
+	private failures = new Set<(error: Error) => void>();
 	private nextCall = 0;
 	// the last packets, shown when something times out
 	private recent: string[] = [];
+	closed: BrowserClosed | null = null;
 
 	private constructor(private socket: net.Socket) {
 		socket.on("data", (chunk: Buffer) => this.read(chunk));
+		// a crash resets the connection, and an error nobody listens for ends
+		// the whole test run. The close event comes right after it anyway
+		socket.on("error", () => {});
+		socket.on("close", () => {
+			this.closed = new BrowserClosed("Firefox");
+			for (const fail of [...this.failures]) fail(this.closed);
+		});
 	}
 
 	static async connect(port: number): Promise<Rdp> {
@@ -66,37 +77,50 @@ export class Rdp {
 	}
 
 	private waitFor(match: (packet: Packet) => boolean, timeout: number, what: string): Promise<Packet> {
+		if (this.closed) return Promise.reject(this.closed);
 		return new Promise((resolve, reject) => {
-			const timer = setTimeout(() => {
-				this.listeners.delete(listener);
-				reject(this.timedOut(what));
-			}, timeout);
-			const listener = (packet: Packet) => {
-				if (!match(packet)) return;
+			const settle = () => {
 				clearTimeout(timer);
 				this.listeners.delete(listener);
+				this.failures.delete(fail);
+			};
+			const fail = (error: Error) => {
+				settle();
+				reject(error);
+			};
+			const timer = setTimeout(() => fail(this.timedOut(what)), timeout);
+			const listener = (packet: Packet) => {
+				if (!match(packet)) return;
+				settle();
 				resolve(packet);
 			};
 			this.listeners.add(listener);
+			this.failures.add(fail);
 		});
 	}
 
 	private request(to: string, type: string, body: object = {}, timeout = 30_000): Promise<Packet> {
+		if (this.closed) return Promise.reject(this.closed);
 		return new Promise((resolve, reject) => {
 			const queue = this.pending.get(to) ?? [];
 			const answer = (reply: Packet) => {
 				clearTimeout(timer);
+				this.failures.delete(fail);
 				if (reply.error) reject(new Error(`${to} ${type}: ${reply.error} ${reply.message ?? ""}`));
 				else resolve(reply);
 			};
 			// an actor that never answers shouldn't keep a spot in its queue, or
 			// its next reply would go to the wrong request
-			const timer = setTimeout(() => {
+			const fail = (error: Error) => {
+				clearTimeout(timer);
+				this.failures.delete(fail);
 				queue.splice(queue.indexOf(answer), 1);
-				reject(this.timedOut(`${to} ${type}`));
-			}, timeout);
+				reject(error);
+			};
+			const timer = setTimeout(() => fail(this.timedOut(`${to} ${type}`)), timeout);
 			queue.push(answer);
 			this.pending.set(to, queue);
+			this.failures.add(fail);
 			const data = Buffer.from(JSON.stringify({ to, type, ...body }));
 			this.socket.write(`${data.length}:`);
 			this.socket.write(data);
@@ -217,7 +241,12 @@ export class AddonPages {
 		const ready = "typeof chrome === 'object' && typeof chrome.tabs?.query === 'function'";
 		for (;;) {
 			const form = this.forms.findLast((f) => f.url?.includes(part));
-			if (form && (await this.rdp.evaluate(form.consoleActor, ready, 3_000).catch(() => false)) === true) {
+			// a page that isn't ready yet can take a while to answer, but a closed browser never will
+			const notYet = (error: unknown) => {
+				if (error instanceof BrowserClosed) throw error;
+				return false;
+			};
+			if (form && (await this.rdp.evaluate(form.consoleActor, ready, 3_000).catch(notYet)) === true) {
 				return form.consoleActor;
 			}
 			if (Date.now() > end) {

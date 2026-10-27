@@ -36,6 +36,7 @@ function setup(initialTabs: LiveTab[]) {
 	const prepared: number[] = [];
 	const marked: number[] = [];
 	const injected: number[] = [];
+	const paused: number[] = [];
 	const later: Array<() => Promise<void>> = [];
 	// favicon waits and discards in the order they happened
 	const events: string[] = [];
@@ -91,6 +92,9 @@ function setup(initialTabs: LiveTab[]) {
 		injectContentScript: async (tabId) => {
 			injected.push(tabId);
 		},
+		pauseAutoplay: async (tabId) => {
+			paused.push(tabId);
+		},
 		isOnline: () => true,
 		later: (callback) => {
 			later.push(callback);
@@ -108,6 +112,7 @@ function setup(initialTabs: LiveTab[]) {
 		prepared,
 		marked,
 		injected,
+		paused,
 		later,
 		events,
 		setReply(fn: typeof reply) {
@@ -310,6 +315,93 @@ describe("browser startup", () => {
 		const t = setup([youtubeTab(2)]);
 		await t.engine.onStartup();
 		expect(t.discarded).toEqual([]);
+	});
+});
+
+describe("pausing on restart", () => {
+	const playing = { type: "playback", playing: true } as const;
+
+	it("pauses the first playback in the active YouTube tab of each window", async () => {
+		const t = setup([
+			youtubeTab(1, { active: true }),
+			youtubeTab(2, { pinned: true }),
+			youtubeTab(7, { active: true, windowId: 2 }),
+		]);
+		await t.engine.onStartup();
+		for (const id of [1, 2, 7]) await t.engine.onContentMessage(id, playing);
+		expect(t.paused).toEqual([1, 7]);
+	});
+
+	it("leaves later playback alone", async () => {
+		const t = setup([youtubeTab(1, { active: true })]);
+		await t.engine.onStartup();
+		await t.engine.onContentMessage(1, playing);
+		await t.engine.onContentMessage(1, { type: "playback", playing: false });
+		await t.engine.onContentMessage(1, playing);
+		expect(t.paused).toEqual([1]);
+	});
+
+	it("waits for the video to play", async () => {
+		const t = setup([youtubeTab(1, { active: true })]);
+		await t.engine.onStartup();
+		await t.engine.onContentMessage(1, { type: "playback", playing: false });
+		expect(t.paused).toEqual([]);
+		await t.engine.onContentMessage(1, playing);
+		expect(t.paused).toEqual([1]);
+	});
+
+	it("still pauses when YouTube adds to the URL", async () => {
+		const t = setup([youtubeTab(1, { active: true })]);
+		await t.engine.onStartup();
+		t.patchTab(1, { url: "https://www.youtube.com/watch?v=v1&t=60s&themeRefresh=1" });
+		await t.engine.onContentMessage(1, playing);
+		expect(t.paused).toEqual([1]);
+	});
+
+	it("never pauses a tab opened after the restart", async () => {
+		const t = setup([youtubeTab(1, { active: true })]);
+		await t.engine.onStartup();
+		for (const id of [2, 3]) {
+			t.tabs.set(id, youtubeTab(id));
+			await t.engine.onCreated(youtubeTab(id));
+		}
+		t.patchTab(1, { active: false });
+		t.patchTab(3, { active: true });
+		await t.engine.onActivated(3, 1);
+		for (const id of [2, 3]) await t.engine.onContentMessage(id, playing);
+		expect(t.paused).toEqual([]);
+	});
+
+	it.each([
+		["the tab is left", { type: "hidden", playing: false, draft: false }],
+		["the page is used", { type: "activity" }],
+	] as const)("stops once %s", async (_, message) => {
+		const t = setup([youtubeTab(1, { active: true })]);
+		await t.engine.onStartup();
+		await t.engine.onContentMessage(1, message);
+		await t.engine.onContentMessage(1, playing);
+		expect(t.paused).toEqual([]);
+	});
+
+	it("stops once the tab goes to another video", async () => {
+		const t = setup([youtubeTab(1, { active: true })]);
+		await t.engine.onStartup();
+		t.patchTab(1, { url: "https://www.youtube.com/watch?v=other" });
+		await t.engine.onContentMessage(1, playing);
+		t.patchTab(1, { url: "https://www.youtube.com/watch?v=v1" });
+		await t.engine.onContentMessage(1, playing);
+		expect(t.paused).toEqual([]);
+	});
+
+	it.each([
+		["the option is off", { pauseOnRestart: false }],
+		["Dozy Tabs is off", { enabled: false }],
+	])("does nothing when %s", async (_, patch) => {
+		Object.assign(settings, patch);
+		const t = setup([youtubeTab(1, { active: true })]);
+		await t.engine.onStartup();
+		await t.engine.onContentMessage(1, playing);
+		expect(t.paused).toEqual([]);
 	});
 });
 

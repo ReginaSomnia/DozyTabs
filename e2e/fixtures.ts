@@ -211,7 +211,16 @@ export async function pause(browser: Browser, tabId: number): Promise<void> {
 		.toBe(true);
 }
 
+// YouTube sometimes reloads the page with themeRefresh=1 right after the
+// player is ready, so this keeps asking until the video moves
 export async function play(browser: Browser, tabId: number): Promise<void> {
-	await command(browser, tabId, "play");
-	await expect.poll(() => currentTime(browser, tabId), { timeout: 30_000 }).toBeGreaterThan(0.5);
+	await expect
+		.poll(
+			async () => {
+				await command(browser, tabId, "play").catch(() => {});
+				return currentTime(browser, tabId).catch(() => 0);
+			},
+			{ timeout: 30_000 },
+		)
+		.toBeGreaterThan(0.5);
 }

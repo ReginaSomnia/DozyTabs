@@ -29,7 +29,7 @@ const SLIDERS: Shape[] = [
 
 // Sizes and colors copy YouTube's own top bar buttons and menus. YouTube
 // already renamed its color variables once (--yt-spec-* went away), so the
-// button keeps its own copy of both themes and follows <html dark> instead
+// button keeps its own copy of both themes and follows the dark attribute instead
 const STYLE = `
 :host {
 	display: inline-flex; position: relative; margin-right: 8px;
@@ -114,6 +114,12 @@ function element<K extends keyof HTMLElementTagNameMap>(
 	if (className) node.className = className;
 	node.append(...children);
 	return node;
+}
+
+// Theater mode on the light theme darkens only the top bar, with dark on
+// ytd-masthead and nothing on <html>
+export function isDarkTopBar(host: Element, doc: Document): boolean {
+	return doc.documentElement.hasAttribute("dark") || host.closest("ytd-masthead")?.hasAttribute("dark") === true;
 }
 
 export function mountTopBarButton(doc: Document, actions: ButtonActions): () => void {
@@ -248,19 +254,21 @@ export function mountTopBarButton(doc: Document, actions: ButtonActions): () => 
 
 	// YouTube builds the top bar after the page loads and sometimes rebuilds it
 	// on navigation, so keep putting the button back until the page goes away
+	const matchTheme = () => {
+		host.toggleAttribute("dark", isDarkTopBar(host, doc));
+	};
 	const place = () => {
 		if (host.isConnected) return;
 		doc.querySelector(BUTTONS_SELECTOR)?.prepend(host);
+		matchTheme();
 	};
 	const observer = new MutationObserver(place);
 	observer.observe(doc.documentElement, { childList: true, subtree: true });
 	place();
 
-	const matchTheme = () => {
-		host.toggleAttribute("dark", doc.documentElement.hasAttribute("dark"));
-	};
+	// subtree, so it also sees the top bar's own dark switching with theater mode
 	const themeObserver = new MutationObserver(matchTheme);
-	themeObserver.observe(doc.documentElement, { attributes: true, attributeFilter: ["dark"] });
+	themeObserver.observe(doc.documentElement, { attributes: true, attributeFilter: ["dark"], subtree: true });
 	matchTheme();
 	void refresh();
 

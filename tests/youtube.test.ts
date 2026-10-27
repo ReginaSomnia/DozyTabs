@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hasRealTitle, isMusicUrl, isYouTubeUrl, withTimestamp } from "@/sites/youtube";
+import { hasRealTitle, isMusicUrl, isYouTubeUrl, pageOf, withTimestamp } from "@/sites/youtube";
 
 const WATCH = "https://www.youtube.com/watch?v=abc";
 
@@ -79,5 +79,23 @@ describe("hasRealTitle", () => {
 		["www.youtube.com/watch?v=abc", WATCH, false],
 	])("%s is %s", (title, url, expected) => {
 		expect(hasRealTitle(title, url)).toBe(expected);
+	});
+});
+
+describe("pageOf", () => {
+	it("is the same page whatever YouTube adds to the URL", () => {
+		expect(pageOf("https://www.youtube.com/watch?v=abc&t=60s&themeRefresh=1")).toBe(
+			pageOf("https://www.youtube.com/watch?v=abc"),
+		);
+	});
+
+	it("tells videos and pages apart", () => {
+		expect(pageOf("https://www.youtube.com/watch?v=abc")).not.toBe(pageOf("https://www.youtube.com/watch?v=xyz"));
+		expect(pageOf("https://www.youtube.com/shorts/abc")).not.toBe(pageOf("https://www.youtube.com/shorts/xyz"));
+		expect(pageOf("https://www.youtube.com/")).not.toBe(pageOf("https://music.youtube.com/"));
+	});
+
+	it.each([undefined, "", "not a url", "https://example.com/watch?v=abc"])("is null for %s", (url) => {
+		expect(pageOf(url)).toBeNull();
 	});
 });

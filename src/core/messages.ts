@@ -15,6 +15,8 @@ export type PrepareSleepResult = { ok: true } | { ok: false; reason: "visible" |
 
 export type MarkAsleepMessage = { type: "mark-asleep" };
 
+export type PauseAutoplayMessage = { type: "pause-autoplay" };
+
 /** From the button the content script adds to YouTube's top bar */
 export type PageRequest =
 	| { type: "page-state" }
@@ -65,4 +67,8 @@ export function isPageRequest(message: unknown): message is PageRequest {
 
 export function isMarkAsleepMessage(message: unknown): message is MarkAsleepMessage {
 	return typeOf(message) === "mark-asleep";
+}
+
+export function isPauseAutoplayMessage(message: unknown): message is PauseAutoplayMessage {
+	return typeOf(message) === "pause-autoplay";
 }

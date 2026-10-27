@@ -2,6 +2,7 @@ import { browser } from "wxt/browser";
 import { defineContentScript } from "wxt/utils/define-content-script";
 import {
 	isMarkAsleepMessage,
+	isPauseAutoplayMessage,
 	isPrepareSleepMessage,
 	type ContentMessage,
 	type PageRequest,
@@ -17,6 +18,7 @@ import {
 	findMainVideo,
 	hasCommentDraft,
 	isLiveStream,
+	pauseAll,
 	type PlaybackTracker,
 } from "@/sites/youtube-page";
 import { t } from "@/ui/i18n";
@@ -138,6 +140,9 @@ export default defineContentScript({
 			} else if (isMarkAsleepMessage(message)) {
 				showAsleep();
 				sendResponse(true);
+			} else if (isPauseAutoplayMessage(message)) {
+				// a video someone started by hand keeps playing
+				if (!navigator.userActivation.hasBeenActive) pauseAll(document);
 			}
 			return false;
 		};
@@ -171,7 +176,9 @@ export default defineContentScript({
 		}
 
 		// a tab opened in the background starts hidden and never fires
-		// visibilitychange, so tell the background right away
+		// visibilitychange, so tell the background right away. A video that
+		// started before this script ran doesn't fire a change either
 		if (document.visibilityState === "hidden") reportVisibility();
+		else if (playing) send({ type: "playback", playing });
 	},
 });

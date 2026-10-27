@@ -60,6 +60,9 @@
 	"optionsRememberPosition": {
 		"message": "Recordar por dónde iba el vídeo"
 	},
+	"optionsPauseOnRestart": {
+		"message": "Pausar el vídeo de la pestaña activa al reiniciar el navegador"
+	},
 	"optionsKeepAwakeHeading": {
 		"message": "Mantener despiertas"
 	},

@@ -60,6 +60,9 @@
 	"optionsRememberPosition": {
 		"message": "Remember the position in the video"
 	},
+	"optionsPauseOnRestart": {
+		"message": "Pause the video in the active tab when the browser restarts"
+	},
 	"optionsKeepAwakeHeading": {
 		"message": "Keep these awake"
 	},

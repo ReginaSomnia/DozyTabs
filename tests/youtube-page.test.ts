@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createPlaybackTracker, isPlaying } from "@/sites/youtube-page";
+import { createPlaybackTracker, isPlaying, pauseAll } from "@/sites/youtube-page";
 
 type Video = { paused: boolean; ended: boolean; readyState: number };
 
@@ -58,5 +58,15 @@ describe("createPlaybackTracker", () => {
 		const tracker = createPlaybackTracker();
 		const doc = page(video({ paused: true }), video());
 		expect(tracker.isAnyPlaying(doc)).toBe(true);
+	});
+});
+
+describe("pauseAll", () => {
+	it("pauses every video that's playing and leaves the rest alone", () => {
+		const calls: string[] = [];
+		const fake = (name: string, paused: boolean) => ({ paused, pause: () => calls.push(name) });
+		const doc = { querySelectorAll: () => [fake("main", false), fake("preview", true), fake("mini", false)] };
+		pauseAll(doc as unknown as Document);
+		expect(calls).toEqual(["main", "mini"]);
 	});
 });

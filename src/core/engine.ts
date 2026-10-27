@@ -2,7 +2,7 @@ import type { ContentMessage, PrepareSleepMessage, PrepareSleepResult, Summary }
 import { decide, type LiveTab } from "@/core/policy";
 import type { Settings } from "@/core/settings";
 import { EMPTY_TAB_STATE, type TabStateStore } from "@/core/tab-state";
-import { hasRealTitle, isYouTubeUrl } from "@/sites/youtube";
+import { hasRealTitle, isYouTubeUrl, pageOf } from "@/sites/youtube";
 
 export const UNVISITED_FALLBACK_MS = 10_000;
 const SLEEP_BATCH_QTY = 10;
@@ -23,6 +23,8 @@ export type Ports = {
 	hasAlarm(tabId: number): Promise<boolean>;
 	clearAllAlarms(): Promise<void>;
 	injectContentScript(tabId: number): Promise<void>;
+	/** Best effort, the page only pauses a video nobody started by hand */
+	pauseAutoplay(tabId: number): Promise<void>;
 	isOnline(): boolean;
 	later(callback: () => Promise<void>, ms: number): void;
 };
@@ -98,6 +100,13 @@ export function createEngine(ports: Ports, states: TabStateStore, loadSettings: 
 		return true;
 	}
 
+	// someone using the page means the restart is over for that tab
+	async function stopPausing(tabId: number): Promise<void> {
+		if ((await states.get(tabId)).pauseAutoplay !== null) {
+			await states.update(tabId, { pauseAutoplay: null });
+		}
+	}
+
 	async function sleepUnvisited(tabId: number): Promise<void> {
 		const tab = await ports.getTab(tabId);
 		if (!tab) return;
@@ -151,20 +160,30 @@ export function createEngine(ports: Ports, states: TabStateStore, loadSettings: 
 		async onContentMessage(tabId: number, message: ContentMessage): Promise<void> {
 			switch (message.type) {
 				case "visible":
+					await ports.clearAlarm(tabId);
+					return;
 				case "activity":
 					await ports.clearAlarm(tabId);
+					await stopPausing(tabId);
 					return;
 				case "hidden":
 					await states.update(tabId, {
 						playing: message.playing,
 						draft: message.draft,
+						pauseAutoplay: null,
 					});
 					await reevaluate(tabId, true);
 					return;
-				case "playback":
+				case "playback": {
+					const page = (await states.get(tabId)).pauseAutoplay;
+					if (message.playing && page !== null) {
+						await states.update(tabId, { pauseAutoplay: null });
+						if (pageOf((await ports.getTab(tabId))?.url) === page) await ports.pauseAutoplay(tabId);
+					}
 					await states.update(tabId, { playing: message.playing });
 					await reevaluate(tabId, !message.playing);
 					return;
+				}
 				case "draft":
 					await states.update(tabId, { draft: message.draft });
 					await reevaluate(tabId, !message.draft);
@@ -191,6 +210,13 @@ export function createEngine(ports: Ports, states: TabStateStore, loadSettings: 
 			const settings = await loadSettings();
 			const online = ports.isOnline();
 			const tabs = await ports.queryYouTubeTabs();
+			// the restored tab in front starts its video by itself, and the page
+			// only says so once it plays
+			if (settings.enabled && settings.pauseOnRestart) {
+				for (const tab of tabs) {
+					if (tab.active) await states.update(tab.id, { pauseAutoplay: pageOf(tab.url) });
+				}
+			}
 			await Promise.all(
 				tabs
 					.filter((tab) => decide(tab, EMPTY_TAB_STATE, settings, online).sleep)

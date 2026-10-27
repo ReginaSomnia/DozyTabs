@@ -26,6 +26,8 @@ const PREFS: Record<string, string | number | boolean> = {
 	"extensions.background.idle.timeout": 3_600_000,
 	"media.autoplay.default": 0,
 	"media.autoplay.blocking_policy": 0,
+	// 1%, so the videos YouTube autoplays while the tests run stay quiet
+	"media.volume_scale": "0.01",
 	"app.update.disabledForTesting": true,
 	"browser.shell.checkDefaultBrowser": false,
 	"browser.aboutwelcome.enabled": false,
@@ -61,6 +63,8 @@ export async function launchFirefox(profile: string): Promise<Browser> {
 			"-profile",
 			dir,
 			"-no-remote",
+			// no window to take focus
+			"-headless",
 			"-wait-for-browser",
 			"-start-debugger-server",
 			String(DEBUGGER_PORT),

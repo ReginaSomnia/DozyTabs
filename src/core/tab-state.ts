@@ -5,6 +5,8 @@ export type TabState = {
 	playing: boolean;
 	draft: boolean;
 	keepAwake: boolean;
+	/** The page an active tab had when the browser started, so its first playback gets paused */
+	pauseAutoplay: string | null;
 };
 
 export const EMPTY_TAB_STATE: Readonly<TabState> = Object.freeze({
@@ -12,6 +14,7 @@ export const EMPTY_TAB_STATE: Readonly<TabState> = Object.freeze({
 	playing: false,
 	draft: false,
 	keepAwake: false,
+	pauseAutoplay: null,
 });
 
 export type TabStateStore = {

@@ -7,6 +7,7 @@ import {
 	isPopupRequest,
 	type MarkAsleepMessage,
 	type PageRequest,
+	type PauseAutoplayMessage,
 	type PageState,
 	type PopupRequest,
 	type PrepareSleepResult,
@@ -152,6 +153,11 @@ function createBrowserPorts(): Ports {
 			} catch (error) {
 				logError(error);
 			}
+		},
+		async pauseAutoplay(tabId) {
+			const message: PauseAutoplayMessage = { type: "pause-autoplay" };
+			// a page that went away or is reloading just keeps playing
+			await browser.tabs.sendMessage(tabId, message).catch(() => {});
 		},
 		isOnline: () => navigator.onLine,
 		later(callback, ms) {

@@ -41,6 +41,15 @@ export function withTimestamp(url: string, seconds: number, duration = Number.Na
 	return parsed.toString();
 }
 
+// The page a URL shows, without what YouTube or Dozy Tabs add to it (t=,
+// themeRefresh=1 and so on), so a reload of the same video counts as the same
+export function pageOf(url: string | undefined): string | null {
+	const parsed = parse(url);
+	if (!parsed || !isYouTubeUrl(url)) return null;
+	const video = parsed.searchParams.get("v");
+	return `${parsed.hostname}${parsed.pathname}${video ? `?v=${video}` : ""}`;
+}
+
 // While a tab loads, the browser shows the bare URL or plain "YouTube" as the
 // title. The video's real name only shows up once the page script runs
 export function hasRealTitle(title: string | undefined, url: string | undefined): boolean {

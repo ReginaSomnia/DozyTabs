@@ -42,6 +42,12 @@ export function createPlaybackTracker() {
 
 export type PlaybackTracker = ReturnType<typeof createPlaybackTracker>;
 
+export function pauseAll(doc: Document): void {
+	for (const video of doc.querySelectorAll("video")) {
+		if (!video.paused) video.pause();
+	}
+}
+
 export function isLiveStream(doc: Document): boolean {
 	const player = doc.querySelector("#movie_player");
 	if (!player) return false;

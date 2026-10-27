@@ -21,6 +21,7 @@ Dozy Tabs uses the browser's own tab discarding, sleeping tabs keeps their title
 - The right-click menu on a YouTube tab has the per-tab keep-awake toggle and the sleep all idle YouTube tabs button, just in case
 - Settings sync between computers through your browser account (if you have it configured, that is)
 - After a browser restart, YouTube tabs that aren't active go to sleep immediately
+    - The active one in each window stays awake, but if its video starts playing by itself, it gets paused (you can turn this off)
 
 So far it's been tested on Chromium and Firefox, both with end-to-end tests on YouTube (see [Development](#development)), but the restart behaviour still needs more checking on everywhere. Also, it should work in all Chromium-based (Chrome, Edge, Vivaldi, Brave, etc) and Firefox-based (Zen, Librewolf, etc) browsers, but again, it should be tested
 

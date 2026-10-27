@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { isContentMessage, isMarkAsleepMessage, isPageRequest, isPopupRequest } from "@/core/messages";
+import {
+	isContentMessage,
+	isMarkAsleepMessage,
+	isPageRequest,
+	isPauseAutoplayMessage,
+	isPopupRequest,
+} from "@/core/messages";
 
 describe("isPageRequest", () => {
 	it.each([
@@ -27,5 +33,12 @@ describe("isMarkAsleepMessage", () => {
 	it("accepts only mark-asleep", () => {
 		expect(isMarkAsleepMessage({ type: "mark-asleep" })).toBe(true);
 		expect(isMarkAsleepMessage({ type: "prepare-sleep" })).toBe(false);
+	});
+});
+
+describe("isPauseAutoplayMessage", () => {
+	it("accepts only pause-autoplay", () => {
+		expect(isPauseAutoplayMessage({ type: "pause-autoplay" })).toBe(true);
+		expect(isPauseAutoplayMessage({ type: "mark-asleep" })).toBe(false);
 	});
 });

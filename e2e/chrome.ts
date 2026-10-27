@@ -3,7 +3,7 @@ import { mkdirSync, rmSync } from "node:fs";
 import path from "node:path";
 import type { Readable, Writable } from "node:stream";
 import { chromium } from "@playwright/test";
-import { FOCUS_HOME, OUTPUT, PROFILES, until, wait, type Browser } from "./browser";
+import { BrowserClosed, FOCUS_HOME, OUTPUT, PROFILES, until, wait, type Browser } from "./browser";
 
 // Playwright's own launch attaches to every page, and an attached page keeps
 // reporting visible after its tab goes to the background, which is exactly
@@ -24,6 +24,7 @@ class Cdp {
 	private nextId = 1;
 	private pending = new Map<number, Pending>();
 	private buffer = "";
+	private closed: BrowserClosed | null = null;
 
 	constructor(
 		private input: Writable,
@@ -44,12 +45,17 @@ class Cdp {
 			}
 		});
 		output.on("close", () => {
-			for (const p of this.pending.values()) p.reject(new Error("closed"));
+			this.closed = new BrowserClosed("Chromium");
+			for (const p of this.pending.values()) p.reject(this.closed);
 			this.pending.clear();
 		});
+		// writing to the pipe of a Chromium that's gone errors, and an error
+		// nobody listens for ends the whole test run
+		input.on("error", () => {});
 	}
 
 	send(method: string, params: object = {}, sessionId?: string): Promise<any> {
+		if (this.closed) return Promise.reject(this.closed);
 		const id = this.nextId++;
 		this.input.write(`${JSON.stringify({ id, method, params, sessionId })}\0`);
 		return new Promise((resolve, reject) => this.pending.set(id, { resolve, reject }));
@@ -71,6 +77,9 @@ export async function launchChrome(profile: string): Promise<Browser> {
 			// the tests check the English texts, and Chromium otherwise follows
 			// the system's language
 			"--lang=en-US",
+			// no window to take focus and no sound while the tests run
+			"--headless",
+			"--mute-audio",
 			"--no-first-run",
 			"--no-default-browser-check",
 			"--disable-search-engine-choice-screen",
