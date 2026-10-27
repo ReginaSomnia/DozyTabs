@@ -175,13 +175,13 @@ export default defineBackground(() => {
 			id: MENU_KEEP_AWAKE,
 			type: "checkbox",
 			checked: false,
-			title: browser.i18n.getMessage("menuKeepAwake"),
+			title: browser.i18n.getMessage("keepAwake"),
 			contexts,
 			documentUrlPatterns: YOUTUBE_MATCH_PATTERNS,
 		});
 		browser.contextMenus.create({
 			id: MENU_SLEEP_ALL,
-			title: browser.i18n.getMessage("menuSleepAll"),
+			title: browser.i18n.getMessage("sleepAllIdle"),
 			contexts,
 			documentUrlPatterns: YOUTUBE_MATCH_PATTERNS,
 		});

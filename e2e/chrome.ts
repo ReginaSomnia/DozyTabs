@@ -68,6 +68,9 @@ export async function launchChrome(profile: string): Promise<Browser> {
 			"--remote-debugging-pipe",
 			`--disable-extensions-except=${EXTENSION}`,
 			`--load-extension=${EXTENSION}`,
+			// the tests check the English texts, and Chromium otherwise follows
+			// the system's language
+			"--lang=en-US",
 			"--no-first-run",
 			"--no-default-browser-check",
 			"--disable-search-engine-choice-screen",

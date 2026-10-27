@@ -53,6 +53,7 @@ async function render(): Promise<void> {
 	sleepAll.disabled = !settings.enabled || summary.idle === 0;
 	keepAwakeRow.hidden = summary.currentTab === null;
 	keepAwake.checked = summary.currentTab?.keepAwake ?? false;
+	keepAwake.disabled = !settings.enabled;
 }
 
 sleepAll.addEventListener("click", async () => {

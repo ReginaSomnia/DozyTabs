@@ -58,6 +58,12 @@ button:disabled {
 	cursor: pointer;
 }
 
+label:has(> input:disabled),
+fieldset:disabled legend {
+	cursor: default;
+	opacity: 0.5;
+}
+
 .toggle input {
 	width: 1rem;
 	height: 1rem;

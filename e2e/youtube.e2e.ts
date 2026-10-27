@@ -105,7 +105,7 @@ test("the top bar button shows this tab's state", async () => {
 				).catch(() => ""),
 			{ timeout: 30_000 },
 		)
-		.toBe("This tab sleeps when it's idle");
+		.toBe("This tab will sleep when it's idle");
 });
 
 async function openLiveStream(): Promise<{ tabId: number; id: string }> {

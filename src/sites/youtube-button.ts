@@ -76,7 +76,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .status { font-size: 14px; line-height: 20px; color: var(--text-secondary); }
 hr { border: 0; border-top: 1px solid var(--hover); margin: 8px 0; }
 .item {
-	display: flex; align-items: center; gap: 16px; width: 100%; min-height: 40px; padding: 0 16px;
+	display: flex; align-items: center; gap: 16px; width: 100%; min-height: 40px; padding: 8px 16px;
 	font-size: 14px; line-height: 20px; text-align: left;
 }
 .item:hover, .item:focus-visible { background: var(--hover); outline: none; }
@@ -135,7 +135,7 @@ export function mountTopBarButton(doc: Document, actions: ButtonActions): () => 
 		"button",
 		"item",
 		icon(doc, MOON_SLASHED),
-		element(doc, "span", "label", actions.text("menuKeepAwake")),
+		element(doc, "span", "label", actions.text("keepAwake")),
 		element(doc, "span", "switch"),
 	);
 	keep.setAttribute("role", "menuitemcheckbox");
@@ -144,7 +144,7 @@ export function mountTopBarButton(doc: Document, actions: ButtonActions): () => 
 		"button",
 		"item",
 		icon(doc, MOON),
-		element(doc, "span", "label", actions.text("menuSleepAll")),
+		element(doc, "span", "label", actions.text("sleepAllIdle")),
 	);
 	sleepAll.setAttribute("role", "menuitem");
 	const settings = element(
@@ -152,7 +152,7 @@ export function mountTopBarButton(doc: Document, actions: ButtonActions): () => 
 		"button",
 		"item",
 		icon(doc, SLIDERS),
-		element(doc, "span", "label", actions.text("popupOpenOptions")),
+		element(doc, "span", "label", actions.text("settings")),
 	);
 	settings.setAttribute("role", "menuitem");
 

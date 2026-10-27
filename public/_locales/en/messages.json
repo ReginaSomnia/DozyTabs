@@ -5,6 +5,18 @@
 	"extDescription": {
 		"message": "Puts idle YouTube tabs to sleep so they stop using memory and CPU, and picks up where you left off"
 	},
+	"enable": {
+		"message": "Enable Dozy Tabs"
+	},
+	"keepAwake": {
+		"message": "Keep this tab awake"
+	},
+	"settings": {
+		"message": "Settings"
+	},
+	"sleepAllIdle": {
+		"message": "Sleep all idle YouTube tabs"
+	},
 	"popupNoTabs": {
 		"message": "No YouTube tabs open"
 	},
@@ -36,26 +48,8 @@
 	"popupSleepAll": {
 		"message": "Sleep all idle now"
 	},
-	"popupKeepAwake": {
-		"message": "Keep this tab awake"
-	},
-	"popupEnabled": {
-		"message": "Dozy Tabs is on"
-	},
-	"popupOpenOptions": {
-		"message": "Settings"
-	},
-	"menuKeepAwake": {
-		"message": "Keep this tab awake"
-	},
-	"menuSleepAll": {
-		"message": "Sleep all idle YouTube tabs"
-	},
 	"optionsTitle": {
 		"message": "Dozy Tabs settings"
-	},
-	"optionsEnabled": {
-		"message": "Put idle YouTube tabs to sleep"
 	},
 	"optionsIdleMinutes": {
 		"message": "Minutes before an idle tab sleeps"
@@ -76,19 +70,19 @@
 		"message": "YouTube Music"
 	},
 	"optionsKeepDrafts": {
-		"message": "Tabs with an unsent comment"
+		"message": "Tabs with a pending comment"
 	},
 	"optionsKeepWhileOffline": {
-		"message": "Every tab, while you're offline"
+		"message": "Every tab, if you're offline"
 	},
 	"optionsSaved": {
 		"message": "Saved"
 	},
 	"pageStatusCanSleep": {
-		"message": "This tab sleeps when it's idle"
+		"message": "This tab will sleep when it's idle"
 	},
 	"pageStatusKeptAwake": {
-		"message": "This tab stays awake until you close it"
+		"message": "This tab will be awake until you close it"
 	},
 	"pageStatusOff": {
 		"message": "Dozy Tabs is off"

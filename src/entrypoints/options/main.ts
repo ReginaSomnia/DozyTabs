@@ -19,6 +19,11 @@ function fill(settings: Settings): void {
 		if (typeof value === "boolean") input.checked = value;
 		else input.value = String(value);
 	}
+	// with Dozy Tabs off none of the other options do anything
+	for (const element of form.elements) {
+		const control = element as HTMLInputElement | HTMLFieldSetElement;
+		if (control.name !== "enabled") control.disabled = !settings.enabled;
+	}
 }
 
 function showSaved(): void {

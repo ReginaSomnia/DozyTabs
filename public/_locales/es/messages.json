@@ -1,0 +1,104 @@
+{
+	"extName": {
+		"message": "Dozy Tabs"
+	},
+	"extDescription": {
+		"message": "Duerme las pestañas de YouTube que no usas para que dejen de gastar memoria y CPU, y vuelve al vídeo donde lo dejaste"
+	},
+	"enable": {
+		"message": "Activar Dozy Tabs"
+	},
+	"keepAwake": {
+		"message": "Mantener esta pestaña despierta"
+	},
+	"settings": {
+		"message": "Ajustes"
+	},
+	"sleepAllIdle": {
+		"message": "Dormir todas las pestañas de YouTube inactivas"
+	},
+	"popupNoTabs": {
+		"message": "No hay pestañas de YouTube abiertas"
+	},
+	"popupTotalOne": {
+		"message": "1 pestaña de YouTube"
+	},
+	"popupTotalMany": {
+		"message": "$COUNT$ pestañas de YouTube",
+		"placeholders": {
+			"count": {
+				"content": "$1"
+			}
+		}
+	},
+	"popupBreakdown": {
+		"message": "$ASLEEP$ dormidas, $IDLE$ inactivas, $PLAYING$ reproduciendo",
+		"placeholders": {
+			"asleep": {
+				"content": "$1"
+			},
+			"idle": {
+				"content": "$2"
+			},
+			"playing": {
+				"content": "$3"
+			}
+		}
+	},
+	"popupSleepAll": {
+		"message": "Dormir todas las inactivas"
+	},
+	"optionsTitle": {
+		"message": "Ajustes de Dozy Tabs"
+	},
+	"optionsIdleMinutes": {
+		"message": "Minutos antes de dormir una pestaña inactiva"
+	},
+	"optionsSleepUnvisited": {
+		"message": "Dormir las pestañas que abras en segundo plano de inmediato"
+	},
+	"optionsRememberPosition": {
+		"message": "Recordar por dónde iba el vídeo"
+	},
+	"optionsKeepAwakeHeading": {
+		"message": "Mantener despiertas"
+	},
+	"optionsKeepPinned": {
+		"message": "Pestañas fijadas"
+	},
+	"optionsKeepMusic": {
+		"message": "YouTube Music"
+	},
+	"optionsKeepDrafts": {
+		"message": "Pestañas con un comentario pendiente"
+	},
+	"optionsKeepWhileOffline": {
+		"message": "Todas las pestañas, si estás sin conexión"
+	},
+	"optionsSaved": {
+		"message": "Guardado"
+	},
+	"pageStatusCanSleep": {
+		"message": "Esta pestaña se dormirá cuando esté inactiva"
+	},
+	"pageStatusKeptAwake": {
+		"message": "Esta pestaña seguirá despierta hasta que la cierres"
+	},
+	"pageStatusOff": {
+		"message": "Dozy Tabs está inactivo"
+	},
+	"pageSleptNone": {
+		"message": "No hay pestañas inactivas que dormir"
+	},
+	"pageSleptOne": {
+		"message": "1 pestaña dormida"
+	},
+	"pageSleptMany": {
+		"message": "$COUNT$ pestañas dormidas",
+		"placeholders": {
+			"count": {
+				"content": "$1"
+			}
+		}
+	}
+}
