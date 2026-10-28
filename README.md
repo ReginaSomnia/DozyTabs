@@ -59,6 +59,7 @@ pnpm test:e2e       # end-to-end tests on Chromium
 pnpm test:e2e:firefox  # same on Firefox
 pnpm typecheck
 pnpm format
+pnpm release        # build the store zips and upload them, with the keys from `pnpm exec wxt submit init`
 ```
 
 ### End-to-end tests
