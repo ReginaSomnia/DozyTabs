@@ -35,7 +35,13 @@ All the code is here, so you can check it yourself
 
 ## Install
 
-It's not on the extension stores yet, for now you have to build it from source. You'll need [Node.js](https://nodejs.org) and [pnpm](https://pnpm.io) (you could use npm, too, I just switched to pnpm when the full supply-chain boom started... but that would use whatever versions you get from the packages resolved that day, instead of what I used)
+- [Chrome Web Store](https://chromewebstore.google.com/detail/dozy-tabs/nkidnnjcbgjepclmdhmepcpdfgkbdiho), for Chrome, Brave, Vivaldi and other Chromium-based browsers
+- [Firefox Add-ons](https://addons.mozilla.org/firefox/addon/dozy-tabs/), for Firefox, Zen, Librewolf and other Firefox-based browsers
+- [Microsoft Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/dozy-tabs/bjcojickfhjkojjgafkdhafphlcdkike)
+
+### From source
+
+You'll need [Node.js](https://nodejs.org) and [pnpm](https://pnpm.io) (you could use npm, too, I just switched to pnpm when the full supply-chain boom started... but that would use whatever versions you get from the packages resolved that day, instead of what I used)
 
 ```sh
 pnpm install
@@ -45,7 +51,7 @@ pnpm build:firefox  # Firefox, Zen, Librewolf, and other Firefox-based browsers
 
 **Chromium family:** open `chrome://extensions` (or `BROWSER_OWN_SCHEME://extensions`, each browser can change it sometimes, although MAYBE `chrome://` will resolve into `edge://`, `vivaldi://`, etc... didn't check it yet, tho), turn on developer mode, click `Load unpacked` and pick the `.output/chrome-mv3` folder
 
-**Firefox:** open `about:debugging#/runtime/this-firefox`, click `Load Temporary Add-on` and pick `.output/firefox-mv3/manifest.json`. Firefox removes temporary add-ons when closed, so you'll need to load it again after a restart (sorry, when I publish it into the extension stores, it will be easier...)
+**Firefox:** open `about:debugging#/runtime/this-firefox`, click `Load Temporary Add-on` and pick `.output/firefox-mv3/manifest.json`. Firefox removes temporary add-ons when closed, so you'll need to load it again after a restart (the one from Firefox Add-ons stays, though)
 
 The settings are in the popup's settings link, or in the extension's options from the extensions page
 
