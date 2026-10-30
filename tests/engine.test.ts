@@ -372,13 +372,32 @@ describe("pausing on restart", () => {
 		expect(t.paused).toEqual([]);
 	});
 
-	it.each([
-		["the tab is left", { type: "hidden", playing: false, draft: false }],
-		["the page is used", { type: "activity" }],
-	] as const)("stops once %s", async (_, message) => {
+	it("still pauses once a covered window shows up", async () => {
 		const t = setup([youtubeTab(1, { active: true })]);
 		await t.engine.onStartup();
-		await t.engine.onContentMessage(1, message);
+		await t.engine.onContentMessage(1, { type: "hidden", playing: false, draft: false });
+		await t.engine.onContentMessage(1, { type: "visible" });
+		await t.engine.onContentMessage(1, playing);
+		expect(t.paused).toEqual([1]);
+	});
+
+	it("stops once the tab is left", async () => {
+		const t = setup([youtubeTab(1, { active: true }), youtubeTab(2)]);
+		await t.engine.onStartup();
+		t.patchTab(1, { active: false });
+		t.patchTab(2, { active: true });
+		await t.engine.onActivated(2, 1);
+		t.patchTab(2, { active: false });
+		t.patchTab(1, { active: true });
+		await t.engine.onActivated(1, 1);
+		await t.engine.onContentMessage(1, playing);
+		expect(t.paused).toEqual([]);
+	});
+
+	it("stops once the page is used", async () => {
+		const t = setup([youtubeTab(1, { active: true })]);
+		await t.engine.onStartup();
+		await t.engine.onContentMessage(1, { type: "activity" });
 		await t.engine.onContentMessage(1, playing);
 		expect(t.paused).toEqual([]);
 	});

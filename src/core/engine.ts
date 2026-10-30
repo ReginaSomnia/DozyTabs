@@ -100,7 +100,7 @@ export function createEngine(ports: Ports, states: TabStateStore, loadSettings: 
 		return true;
 	}
 
-	// someone using the page means the restart is over for that tab
+	// someone using the page or leaving the tab means the restart is over for that tab
 	async function stopPausing(tabId: number): Promise<void> {
 		if ((await states.get(tabId)).pauseAutoplay !== null) {
 			await states.update(tabId, { pauseAutoplay: null });
@@ -129,7 +129,9 @@ export function createEngine(ports: Ports, states: TabStateStore, loadSettings: 
 			// never has an alarm, so "create if missing" only starts the timer
 			// of the tab I just left
 			for (const tab of await ports.queryYouTubeTabs(windowId)) {
-				if (tab.id !== tabId) await evaluate(tab, false);
+				if (tab.id === tabId) continue;
+				await stopPausing(tab.id);
+				await evaluate(tab, false);
 			}
 		},
 
@@ -170,7 +172,6 @@ export function createEngine(ports: Ports, states: TabStateStore, loadSettings: 
 					await states.update(tabId, {
 						playing: message.playing,
 						draft: message.draft,
-						pauseAutoplay: null,
 					});
 					await reevaluate(tabId, true);
 					return;
