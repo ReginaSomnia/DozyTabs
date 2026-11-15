@@ -11,14 +11,13 @@ import {
 	type PrepareSleepResult,
 } from "@/core/messages";
 import { showSleepFavicon } from "@/sites/sleep-favicon";
-import { withTimestamp } from "@/sites/youtube";
+import { YOUTUBE_MATCH_PATTERNS } from "@/sites/youtube";
 import { mountTopBarButton } from "@/sites/youtube-button";
 import {
 	createPlaybackTracker,
-	findMainVideo,
 	hasCommentDraft,
-	isLiveStream,
 	pauseAll,
+	urlWithPosition,
 	type PlaybackTracker,
 } from "@/sites/youtube-page";
 import { t } from "@/ui/i18n";
@@ -32,9 +31,7 @@ const PLAYBACK_EVENTS = ["play", "playing", "pause", "ended", "emptied"] as cons
 const INPUT_EVENTS = ["pointerdown", "keydown", "wheel"] as const;
 
 function stampPosition(): void {
-	const video = findMainVideo(document);
-	if (!video || isLiveStream(document)) return;
-	const next = withTimestamp(location.href, video.currentTime, video.duration);
+	const next = urlWithPosition(document, location.href);
 	if (next && next !== location.href) {
 		history.replaceState(history.state, "", next);
 	}
@@ -55,7 +52,7 @@ function prepareSleep(message: PrepareSleepMessage, playback: PlaybackTracker): 
 }
 
 export default defineContentScript({
-	matches: ["*://*.youtube.com/*"],
+	matches: YOUTUBE_MATCH_PATTERNS,
 	runAt: "document_idle",
 	main(ctx) {
 		const playback = createPlaybackTracker();

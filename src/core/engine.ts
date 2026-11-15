@@ -205,9 +205,10 @@ export function createEngine(ports: Ports, states: TabStateStore, loadSettings: 
 		},
 
 		async onStartup(): Promise<void> {
-			// tab ids start over every session, so last session's alarms could
-			// point at unrelated tabs
+			// tab ids start over every session, so last session's alarms and
+			// states could point at unrelated tabs
 			await ports.clearAllAlarms();
+			await states.clear();
 			const settings = await loadSettings();
 			const online = ports.isOnline();
 			const tabs = await ports.queryYouTubeTabs();
@@ -260,6 +261,13 @@ export function createEngine(ports: Ports, states: TabStateStore, loadSettings: 
 		async setKeepAwake(tabId: number, keepAwake: boolean): Promise<void> {
 			await states.update(tabId, { keepAwake });
 			await reevaluate(tabId);
+		},
+
+		async toggleKeepAwake(tabId: number): Promise<boolean> {
+			const keepAwake = !(await states.get(tabId)).keepAwake;
+			await states.update(tabId, { keepAwake });
+			await reevaluate(tabId);
+			return keepAwake;
 		},
 
 		async isKeptAwake(tabId: number): Promise<boolean> {

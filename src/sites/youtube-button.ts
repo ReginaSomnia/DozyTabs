@@ -126,7 +126,8 @@ export function mountTopBarButton(doc: Document, actions: ButtonActions): () => 
 	const name = actions.text("extName");
 	const host = doc.createElement("div");
 	host.id = HOST_ID;
-	const root = host.attachShadow({ mode: "open" });
+	// closed, so the page's scripts can't move the menu's buttons under a click
+	const root = host.attachShadow({ mode: "closed" });
 
 	const toggle = element(doc, "button", "toggle");
 	toggle.setAttribute("aria-label", name);
@@ -212,8 +213,7 @@ export function mountTopBarButton(doc: Document, actions: ButtonActions): () => 
 		void refresh();
 	});
 
-	// The page can access this shadow root and dispatch synthetic clicks.
-	// Only browser-generated interaction may invoke extension actions.
+	// the closed root already keeps the page's scripts out, isTrusted is a second check
 	keep.addEventListener("click", async (event) => {
 		if (!event.isTrusted) return;
 		await actions.setKeepAwake(!(state?.keepAwake ?? false));

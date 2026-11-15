@@ -39,7 +39,13 @@ function totalText(count: number): string {
 
 async function render(): Promise<void> {
 	const [settings, tabId] = await Promise.all([loadSettings(), currentTabId()]);
-	const summary = await request<Summary>({ type: "get-summary", tabId });
+	const summary = await request<Summary | null>({ type: "get-summary", tabId });
+
+	enabled.checked = settings.enabled;
+	if (!summary) {
+		sleepAll.disabled = true;
+		return;
+	}
 
 	total.textContent = totalText(summary.total);
 	breakdown.hidden = summary.total === 0;
@@ -49,7 +55,6 @@ async function render(): Promise<void> {
 		String(summary.playing),
 	]);
 
-	enabled.checked = settings.enabled;
 	sleepAll.disabled = !settings.enabled || summary.idle === 0;
 	keepAwakeRow.hidden = summary.currentTab === null;
 	keepAwake.checked = summary.currentTab?.keepAwake ?? false;

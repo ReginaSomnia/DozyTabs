@@ -22,16 +22,25 @@ export type TabStateStore = {
 	update(tabId: number, patch: Partial<TabState>): Promise<TabState>;
 	remove(tabId: number): Promise<void>;
 	move(fromId: number, toId: number): Promise<void>;
+	clear(): Promise<void>;
 };
 
 type StorageArea = Pick<Browser.storage.StorageArea, "get" | "set" | "remove">;
 
-const keyFor = (tabId: number) => `tab:${tabId}`;
+const KEY_PREFIX = "tab:";
+const keyFor = (tabId: number) => `${KEY_PREFIX}${tabId}`;
 
-export function createTabStateStore(area: StorageArea = browser.storage.session): TabStateStore {
+// Not session storage: an extension update empties that one, and a tab kept
+// awake has to stay awake after it. So it's local storage, cleared on startup
+export function createTabStateStore(area: StorageArea = browser.storage.local): TabStateStore {
 	const cache = new Map<number, TabState>();
+	let clearing: Promise<void> | null = null;
 
 	async function get(tabId: number): Promise<TabState> {
+		// storage still has last session's states until a clear is done, so a
+		// read waits for it. One that started earlier is covered too, the
+		// clear empties the cache last
+		while (clearing) await clearing;
 		const cached = cache.get(tabId);
 		if (cached) return cached;
 		const key = keyFor(tabId);
@@ -62,5 +71,20 @@ export function createTabStateStore(area: StorageArea = browser.storage.session)
 		await update(toId, state);
 	}
 
-	return { get, update, remove, move };
+	async function removeAll(): Promise<void> {
+		const keys = Object.keys(await area.get()).filter((key) => key.startsWith(KEY_PREFIX));
+		await area.remove(keys);
+		cache.clear();
+	}
+
+	async function clear(): Promise<void> {
+		clearing = removeAll();
+		try {
+			await clearing;
+		} finally {
+			clearing = null;
+		}
+	}
+
+	return { get, update, remove, move, clear };
 }

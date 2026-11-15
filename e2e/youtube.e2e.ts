@@ -97,7 +97,10 @@ test("the top bar button shows this tab's state", async () => {
 					browser,
 					tabId,
 					() => {
-						const root = document.getElementById("dozy-tabs-button")?.shadowRoot;
+						// the root is closed, Firefox and Chrome each have their own way in for extensions
+						const host = document.getElementById("dozy-tabs-button") as any;
+						const root: ShadowRoot | null | undefined =
+							host?.openOrClosedShadowRoot ?? (host && chrome.dom?.openOrClosedShadowRoot(host));
 						root?.querySelector<HTMLButtonElement>(".toggle")?.click();
 						return root?.querySelector(".status")?.textContent ?? "";
 					},

@@ -1,5 +1,6 @@
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import net from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { FOCUS_HOME, OUTPUT, PROFILES, wait, type Browser } from "./browser";
@@ -15,7 +16,19 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const FIREFOX = path.join(here, "browsers", "firefox", "core", "firefox.exe");
 const ADDON = path.join(OUTPUT, "firefox-mv3");
 const ADDON_ID = "dozy-tabs@reginaprojects";
-const DEBUGGER_PORT = 6123;
+
+// With a fixed port, a Firefox left over from a run that died would answer in
+// place of the new one
+function freePort(): Promise<number> {
+	return new Promise((resolve, reject) => {
+		const server = net.createServer();
+		server.once("error", reject);
+		server.listen(0, "127.0.0.1", () => {
+			const { port } = server.address() as net.AddressInfo;
+			server.close(() => resolve(port));
+		});
+	});
+}
 
 const PREFS: Record<string, string | number | boolean> = {
 	"devtools.debugger.remote-enabled": true,
@@ -55,6 +68,7 @@ export async function launchFirefox(profile: string): Promise<Browser> {
 			.join("\n"),
 	);
 
+	const port = await freePort();
 	// firefox.exe on Windows is a small launcher that starts the real browser
 	// and exits, -wait-for-browser keeps it around until the browser is gone
 	const child = spawn(
@@ -67,7 +81,7 @@ export async function launchFirefox(profile: string): Promise<Browser> {
 			"-headless",
 			"-wait-for-browser",
 			"-start-debugger-server",
-			String(DEBUGGER_PORT),
+			String(port),
 			"about:blank",
 		],
 		{ stdio: "ignore" },
@@ -84,7 +98,7 @@ export async function launchFirefox(profile: string): Promise<Browser> {
 	};
 
 	try {
-		rdp = await Rdp.connect(DEBUGGER_PORT);
+		rdp = await Rdp.connect(port);
 		await rdp.installTemporaryAddon(ADDON);
 		const pages = await rdp.watchAddon(ADDON_ID);
 		const background = await pages.console("_generated_background_page");

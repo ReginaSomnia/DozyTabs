@@ -101,7 +101,7 @@ function setup(initialTabs: LiveTab[]) {
 		},
 	};
 
-	const states = createTabStateStore(fakeBrowser.storage.session);
+	const states = createTabStateStore();
 	const engine = createEngine(ports, states, async () => settings);
 	return {
 		engine,
@@ -315,6 +315,13 @@ describe("browser startup", () => {
 		const t = setup([youtubeTab(2)]);
 		await t.engine.onStartup();
 		expect(t.discarded).toEqual([]);
+	});
+
+	it("forgets last session's tab states, the ids now belong to other tabs", async () => {
+		const t = setup([youtubeTab(1, { active: true })]);
+		await t.states.update(1, { keepAwake: true });
+		await t.engine.onStartup();
+		expect(await t.engine.isKeptAwake(1)).toBe(false);
 	});
 });
 
@@ -549,6 +556,15 @@ describe("keep awake", () => {
 		expect(await t.engine.isKeptAwake(1)).toBe(true);
 		await t.engine.setKeepAwake(1, false);
 		expect(t.alarms.get(1)).toBe(30);
+	});
+
+	it("toggles from the tab's own state, whatever another tab has", async () => {
+		const t = setup([youtubeTab(1), youtubeTab(2)]);
+		await t.engine.setKeepAwake(1, true);
+		expect(await t.engine.toggleKeepAwake(2)).toBe(true);
+		expect(await t.engine.toggleKeepAwake(1)).toBe(false);
+		expect(await t.engine.isKeptAwake(2)).toBe(true);
+		expect(await t.engine.isKeptAwake(1)).toBe(false);
 	});
 });
 

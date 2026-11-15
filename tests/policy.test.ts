@@ -34,6 +34,14 @@ describe("decide", () => {
 	it.each<[string, LiveTab, TabState, Settings, boolean, StayAwakeReason]>([
 		["the extension is off", tab(), state(), settings({ enabled: false }), true, "disabled"],
 		["not YouTube", tab({ url: undefined }), state(), settings(), true, "not-youtube"],
+		[
+			"YouTube Studio",
+			tab({ url: "https://studio.youtube.com/video/abc/edit" }),
+			state(),
+			settings(),
+			true,
+			"not-youtube",
+		],
 		["YouTube Music", tab({ url: "https://music.youtube.com/watch?v=abc" }), state(), settings(), true, "music"],
 		["active", tab({ active: true }), state(), settings(), true, "active"],
 		["already asleep", tab({ discarded: true }), state(), settings(), true, "asleep"],

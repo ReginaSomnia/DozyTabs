@@ -1,3 +1,5 @@
+import { withTimestamp } from "@/sites/youtube";
+
 const DRAFT_SELECTOR = ["ytd-commentbox [contenteditable]", "ytd-comment-simplebox-renderer [contenteditable]"].join(
 	", ",
 );
@@ -54,6 +56,14 @@ export function isLiveStream(doc: Document): boolean {
 	if (player.classList.contains("ytp-live")) return true;
 	const badge = player.querySelector<HTMLElement>(".ytp-live-badge");
 	return badge !== null && getComputedStyle(badge).display !== "none";
+}
+
+export function urlWithPosition(doc: Document, href: string): string | null {
+	const video = findMainVideo(doc);
+	if (!video || isLiveStream(doc)) return null;
+	// an ad plays in the main video element, so the time would be the ad's
+	if (doc.querySelector("#movie_player")?.classList.contains("ad-showing")) return null;
+	return withTimestamp(href, video.currentTime, video.duration);
 }
 
 export function hasCommentDraft(doc: Document): boolean {

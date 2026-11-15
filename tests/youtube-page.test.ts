@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createPlaybackTracker, isPlaying, pauseAll } from "@/sites/youtube-page";
+import { createPlaybackTracker, isPlaying, pauseAll, urlWithPosition } from "@/sites/youtube-page";
 
 type Video = { paused: boolean; ended: boolean; readyState: number };
 
@@ -58,6 +58,35 @@ describe("createPlaybackTracker", () => {
 		const tracker = createPlaybackTracker();
 		const doc = page(video({ paused: true }), video());
 		expect(tracker.isAnyPlaying(doc)).toBe(true);
+	});
+});
+
+describe("urlWithPosition", () => {
+	const WATCH = "https://www.youtube.com/watch?v=abc";
+
+	const watchPage = (classes: string[], currentTime: number) => {
+		const player = { classList: { contains: (name: string) => classes.includes(name) }, querySelector: () => null };
+		const main = { currentTime, duration: 600 };
+		return {
+			querySelector: (selector: string) => (selector === "#movie_player video" ? main : player),
+		} as unknown as Document;
+	};
+
+	it("has the second the video is at", () => {
+		expect(urlWithPosition(watchPage([], 95), WATCH)).toBe(`${WATCH}&t=95s`);
+	});
+
+	it("leaves the URL alone while an ad shows, the time there is the ad's", () => {
+		expect(urlWithPosition(watchPage(["ad-showing"], 20), `${WATCH}&t=300s`)).toBeNull();
+		expect(urlWithPosition(watchPage(["ad-showing"], 2), `${WATCH}&t=300s`)).toBeNull();
+	});
+
+	it("leaves the URL alone on a live stream", () => {
+		expect(urlWithPosition(watchPage(["ytp-live"], 95), WATCH)).toBeNull();
+	});
+
+	it("leaves the URL alone on a page without a player", () => {
+		expect(urlWithPosition({ querySelector: () => null } as unknown as Document, WATCH)).toBeNull();
 	});
 });
 

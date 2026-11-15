@@ -1,4 +1,8 @@
-export const YOUTUBE_MATCH_PATTERNS = ["*://*.youtube.com/*"];
+// Not all of youtube.com: a sleeping Studio tab loses an upload that's still
+// going, or edits that weren't saved
+const YOUTUBE_HOSTS = ["youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com"];
+
+export const YOUTUBE_MATCH_PATTERNS = YOUTUBE_HOSTS.map((host) => `*://${host}/*`);
 
 const MIN_TIMESTAMP_SECONDS = 5;
 const END_MARGIN_SECONDS = 10;
@@ -15,8 +19,7 @@ function parse(url: string | undefined): URL | null {
 export function isYouTubeUrl(url: string | undefined): boolean {
 	const parsed = parse(url);
 	if (!parsed || !["https:", "http:"].includes(parsed.protocol)) return false;
-	const host = parsed.hostname;
-	return host === "youtube.com" || host.endsWith(".youtube.com");
+	return YOUTUBE_HOSTS.includes(parsed.hostname);
 }
 
 export function isMusicUrl(url: string | undefined): boolean {

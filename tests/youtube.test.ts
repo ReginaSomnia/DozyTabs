@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hasRealTitle, isMusicUrl, isYouTubeUrl, pageOf, withTimestamp } from "@/sites/youtube";
+import { YOUTUBE_MATCH_PATTERNS, hasRealTitle, isMusicUrl, isYouTubeUrl, pageOf, withTimestamp } from "@/sites/youtube";
 
 const WATCH = "https://www.youtube.com/watch?v=abc";
 
@@ -10,6 +10,8 @@ describe("isYouTubeUrl", () => {
 		["https://m.youtube.com/watch?v=abc", true],
 		["https://music.youtube.com/watch?v=abc", true],
 		["http://www.youtube.com/", true],
+		["https://studio.youtube.com/video/abc/edit", false],
+		["https://accounts.youtube.com/", false],
 		["https://notyoutube.com/", false],
 		["https://youtube.com.evil.example/", false],
 		["chrome://newtab/", false],
@@ -17,6 +19,17 @@ describe("isYouTubeUrl", () => {
 		[undefined, false],
 	])("%s is %s", (url, expected) => {
 		expect(isYouTubeUrl(url)).toBe(expected);
+	});
+});
+
+describe("YOUTUBE_MATCH_PATTERNS", () => {
+	it("names the same sites isYouTubeUrl accepts, so Studio is out everywhere", () => {
+		expect(YOUTUBE_MATCH_PATTERNS).toEqual([
+			"*://youtube.com/*",
+			"*://www.youtube.com/*",
+			"*://m.youtube.com/*",
+			"*://music.youtube.com/*",
+		]);
 	});
 });
 

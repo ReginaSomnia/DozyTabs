@@ -2,9 +2,7 @@ import { browser, type Browser } from "wxt/browser";
 import { defineBackground } from "wxt/utils/define-background";
 import { createEngine, type Ports } from "@/core/engine";
 import {
-	isContentMessage,
-	isPageRequest,
-	isPopupRequest,
+	routeMessage,
 	type MarkAsleepMessage,
 	type PageRequest,
 	type PauseAutoplayMessage,
@@ -29,6 +27,13 @@ const MENU_SLEEP_ALL = "sleep-all";
 
 type MenuContexts = [Browser.contextMenus.ContextType, ...Browser.contextMenus.ContextType[]];
 
+type FirefoxMenus = {
+	onShown: {
+		addListener(listener: (info: { menuIds: (string | number)[] }, tab?: Browser.tabs.Tab) => void): void;
+	};
+	refresh(): Promise<void>;
+};
+
 function toLiveTab(tab: Browser.tabs.Tab): LiveTab | null {
 	if (tab.id === undefined) return null;
 	return {
@@ -45,15 +50,6 @@ function toLiveTab(tab: Browser.tabs.Tab): LiveTab | null {
 }
 
 const alarmName = (tabId: number) => `${ALARM_PREFIX}${tabId}`;
-
-function isExtensionPage(url: string | undefined): boolean {
-	if (!url) return false;
-	try {
-		return new URL(url).origin === self.location.origin;
-	} catch {
-		return false;
-	}
-}
 
 function logError(error: unknown): void {
 	console.error("[dozy-tabs]", error);
@@ -294,21 +290,16 @@ export default defineBackground(() => {
 	});
 
 	browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
-		if (sender.id !== browser.runtime.id) return false;
-		// extension pages can have a tab too (the popup opened as a tab), so
-		// the origin is what tells them apart from the content script
-		if (isExtensionPage(sender.url)) {
-			if (!isPopupRequest(message)) return false;
-			reply(handlePopup(message), sendResponse);
+		const route = routeMessage(message, sender, { id: browser.runtime.id, origin: self.location.origin });
+		if (route?.from === "popup") {
+			reply(handlePopup(route.request), sendResponse);
 			return true;
 		}
-		const tabId = sender.tab?.id;
-		if (tabId === undefined) return false;
-		if (isPageRequest(message)) {
-			reply(handlePage(tabId, message), sendResponse);
+		if (route?.from === "page") {
+			reply(handlePage(route.tabId, route.request), sendResponse);
 			return true;
 		}
-		if (isContentMessage(message)) run(engine.onContentMessage(tabId, message));
+		if (route?.from === "content") run(engine.onContentMessage(route.tabId, route.message));
 		return false;
 	});
 
@@ -319,7 +310,18 @@ export default defineBackground(() => {
 		}
 		const tabId = tab?.id;
 		if (info.menuItemId === MENU_KEEP_AWAKE && tabId !== undefined) {
-			run(engine.setKeepAwake(tabId, info.checked === true).then(() => syncKeepAwakeMenu(tabId)));
+			// not info.checked: the checkbox follows the active tab, and on
+			// Firefox the click can be on another tab in the tab strip
+			run(engine.toggleKeepAwake(tabId).then(() => syncKeepAwakeMenu(tabId)));
 		}
 	});
+
+	if (import.meta.env.FIREFOX) {
+		const menus = browser.contextMenus as unknown as FirefoxMenus;
+		menus.onShown.addListener((info, tab) => {
+			const tabId = tab?.id;
+			if (tabId === undefined || !info.menuIds.includes(MENU_KEEP_AWAKE)) return;
+			run(syncKeepAwakeMenu(tabId).then(() => menus.refresh()));
+		});
+	}
 });
